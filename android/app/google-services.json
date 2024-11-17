@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "696852908136",
+    "project_id": "qyzbolsyn-app-15",
+    "storage_bucket": "qyzbolsyn-app-15.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:696852908136:android:8c6bb3c0f2e9cc419693dd",
+        "android_client_info": {
+          "package_name": "com.example.last"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAkWl3TAEuquYzQNJAAYMG_wTMtDwU7TY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
