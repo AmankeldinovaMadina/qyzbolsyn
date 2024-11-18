@@ -89,7 +89,7 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Jarqyn — peer-to-peer клуб о ментальном здоровье в унивеситетах Казахстана.',
+                    'Jarqyn — peer-to-peer клуб о ментальном здоровье в унивеситетах Казахстана.', 
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                     textAlign: TextAlign.left, // Align text to the left
                     softWrap: true,

@@ -36,6 +36,7 @@ class AuthService {
     required String email,
     required String password,
     required BuildContext context,
+    String? username, // Optional username parameter
   }) async {
     try {
       final UserCredential userCredential = 
@@ -44,8 +45,18 @@ class AuthService {
         password: password,
       );
 
+      // Determine the display name
+      String displayName;
+      if (username != null && username.isNotEmpty) {
+        // Use the provided username
+        displayName = username;
+      } else {
+        // Generate a default username from the email
+        displayName = email.length >= 5 ? email.substring(0, 5) : email;
+      }
+
       // Update user profile
-      await userCredential.user?.updateDisplayName(email.split('@')[0]);
+      await userCredential.user?.updateDisplayName(displayName);
 
       print("Signup successful!");
       _navigateToHome(context);

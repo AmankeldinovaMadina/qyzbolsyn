@@ -215,7 +215,10 @@ class HomePage extends StatelessWidget {
                         height: 64,
                       ),
                       onPressed: () {
-                        // Navigate to user profile page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const UserProfilePage()),
+                        );
                       },
                     ),
                     // Search button (top-right)
@@ -226,7 +229,10 @@ class HomePage extends StatelessWidget {
                         height: 32,
                       ),
                       onPressed: () {
-                        // Navigate to search posts page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SearchPostsScreen()),
+                        );
                       },
                     ),
                   ],

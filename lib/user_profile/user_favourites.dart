@@ -1,15 +1,19 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:last/user_profile/fav_podcast_grid.dart';
 import 'package:last/user_profile/fav_post_grid.dart';
 import 'package:last/user_profile/user_profile_page.dart';
 import 'package:last/widgets/horizontal_grid.dart';
 import 'package:last/widgets/podcast_horizontal_grid.dart';
+import 'package:last/services/auth_service.dart';
  
 class UserProfilePage extends StatelessWidget {
   const UserProfilePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    User? user = FirebaseAuth.instance.currentUser;
+    String userName = user?.displayName ?? 'No name';
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -75,8 +79,8 @@ class UserProfilePage extends StatelessWidget {
             const SizedBox(height: 10),
             
             // Username
-            const Text(
-              '@Madina',
+             Text(
+              userName,
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey,

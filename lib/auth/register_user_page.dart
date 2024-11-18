@@ -14,26 +14,39 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
   bool _acceptTerms = false; // State for checkbox
   bool _obscurePassword = true; // State to toggle password visibility
 
-  // Create TextEditingControllers for email and password fields
+  // Create TextEditingControllers for username, email, and password fields
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   @override
   void dispose() {
     // Clean up the controllers when the widget is disposed
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _register() {
-    // Get the email and password from the controllers
+    // Get the values from the controllers
+    final String username = _usernameController.text.trim();
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
 
+    // Determine the username to use
+    String finalUsername = username.isNotEmpty
+        ? username
+        : (email.length >= 5 ? email.substring(0, 5) : email);
+
     if (email.isNotEmpty && password.isNotEmpty) {
-      // Call the AuthService to handle sign up
-      AuthService().signup(email: email, password: password, context: context);
+      // Call the AuthService to handle sign up with the determined username
+      AuthService().signup(
+        email: email,
+        password: password,
+        context: context,
+        username: finalUsername,
+      );
     } else {
       // Handle case where email or password is empty (e.g., show a message)
       showDialog(
@@ -97,6 +110,7 @@ class _RegisterUserPageState extends State<RegisterUserPage> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
+                  controller: _usernameController, // Bind username controller
                   decoration: InputDecoration(
                     hintText: 'Your username',
                     border: OutlineInputBorder(

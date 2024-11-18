@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:last/services/auth_service.dart'; // Import the AuthService for logout functionality
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart'; // Import url_launcher package
+import 'package:last/services/auth_service.dart'; // Import AuthService for logout functionality
 
 class UserProfilePageEdit extends StatelessWidget {
   const UserProfilePageEdit({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    User? user = FirebaseAuth.instance.currentUser;
+    String userEmail = user?.email ?? 'No email';
+    String userName = user?.displayName ?? 'No username';
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -18,8 +24,11 @@ class UserProfilePageEdit extends StatelessWidget {
         ),
         title: const Text(
           'Мой профиль',
-          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold,),
-          
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
       ),
@@ -53,9 +62,9 @@ class UserProfilePageEdit extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             // User Name
-            const Text(
-              'Madina',
-              style: TextStyle(
+            Text(
+              userName,
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -63,8 +72,8 @@ class UserProfilePageEdit extends StatelessWidget {
             const SizedBox(height: 24),
             // Personal Information Section (no edit icons)
             buildInfoSection('Личная информация', color: Color(0xFF979797)), // Updated color
-            buildNonEditableField('Madina'),
-            buildNonEditableField('madina.amankeldinova5@gmail.com'),
+            buildNonEditableField(userName),
+            buildNonEditableField(userEmail),
             const SizedBox(height: 24),
             // Password Section (only password has edit icon)
             buildInfoSection('Пароль', color: Color(0xFF979797)), // Updated color
@@ -74,7 +83,7 @@ class UserProfilePageEdit extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                buildActionButton('Служба поддержки', Color(0xFFFA7BFD), () {}),
+                buildActionButton('Служба поддержки', Color(0xFFFA7BFD), _sendSupportEmail),
                 buildActionButton('Выйти', Color(0xFFFA7BFD), () async {
                   await AuthService().signout(context: context); // Logout functionality
                 }),
@@ -85,6 +94,21 @@ class UserProfilePageEdit extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Method to send support email
+  void _sendSupportEmail() async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: 'qyzbolsyn.app@gmail.com',
+      query: 'subject=Support Request&body=Hello, I need help with...',
+    );
+
+    if (await canLaunchUrl(emailUri)) {
+      await launchUrl(emailUri);
+    } else {
+      print('Could not launch email app'); // Error handling
+    }
   }
 
   // Helper method to build section title
