@@ -1,16 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:last/services/model/post.dart';
 
 class PostDetailPage extends StatelessWidget {
   final String title;
   final String author;
-  final String content;
+  final String category;
+  final List<Content> content; // Update content to be a list of Content objects
 
   const PostDetailPage({
     Key? key,
     required this.title,
     required this.author,
+    required this.category,
     required this.content,
   }) : super(key: key);
+
+  // Mapping of categories from the database to the Russian version
+  String _getCategoryName(String category) {
+    switch (category) {
+      case 'health':
+        return 'Все о нашем здоровье';
+      case 'understand':
+        return 'Как понять себя';
+      case 'security':
+        return 'Моя безопасность';
+      case 'relationship':
+        return 'Отношения';
+      case 'education':
+        return 'Просвещение';
+      default:
+        return category; // Fallback to the original if no match is found
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,8 +77,7 @@ class PostDetailPage extends StatelessWidget {
                           maxLines: 1, // Limit to a single line
                           overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis (...)
                         ),
-                      )
-
+                      ),
                     ),
                   ],
                 ),
@@ -79,15 +99,15 @@ class PostDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Tags aligned to the left (can be modified or removed)
+                    // Tags aligned to the left
                     Wrap(
                       alignment: WrapAlignment.start,
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        TagWidget(label: 'Здоровье'), // Custom tag widget
+                        TagWidget(label: _getCategoryName(category)), // Custom tag widget with mapped category
                         LikeableTagWidget(label: 'В избранное'), // Custom Likeable widget
-                        TagWidget(label: 'Ayel.kz'),
+                        TagWidget(label: author),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -110,15 +130,35 @@ class PostDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
 
-                    // Content section
-                    Text(
-                      content,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1.5, // Adjust line height for readability
-                      ),
+                    // Content section: Iterate over the content list
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: content.map((item) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.headline, // Headline in bold
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                item.text, // Text in regular style
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  height: 1.5, // Adjust line height for readability
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
-                    const SizedBox(height: 16),
                   ],
                 ),
               ),

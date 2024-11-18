@@ -76,7 +76,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 }
 
-// This is your HomePage (the first tab) with the existing widgets
+  // List of categories and their mapped names
+  const Map<String, String> categoryMap = {
+    'health': 'Все о нашем здоровье',
+    'understand': 'Как понять себя',
+    'security': 'Моя безопасность',
+    'relationship': 'Отношения',
+    'education': 'Просвещение',
+  };
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -115,21 +122,68 @@ class HomePage extends StatelessWidget {
                           // Show a message if there are no posts
                           return const Center(child: Text('No posts available'));
                         } else {
-                          // Pass the fetched posts to the HorizontalGridWidget
-                          return HorizontalGridWidget(posts: snapshot.data!);
+                          // Counter to track the number of displayed categories
+                          int categoryCounter = 0;
+
+                          // Filter posts by category and create a HorizontalGridWidget for each
+                          return Column(
+                            children: categoryMap.entries.map((entry) {
+                              String category = entry.key;
+                              String categoryName = entry.value;
+
+                              // Filter posts by category
+                              List<Post> filteredPosts = snapshot.data!
+                                  .where((post) => post.category == category)
+                                  .toList();
+
+                              // Only show the grid if there are posts in this category
+                              if (filteredPosts.isNotEmpty) {
+                                // Increment the category counter
+                                categoryCounter++;
+
+                                // Add the LetsTalk widget after the first category
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Category title
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                      child: Text(
+                                        categoryName,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                    // Horizontal grid for the category
+                                    HorizontalGridWidget(posts: filteredPosts),
+                                    const SizedBox(height: 16),
+                                    // Add Divider and LetsTalk widget
+                                    if (categoryCounter == 2) ...[
+                                      const Divider(
+                                        color: Color(0xFFD1D1D6),
+                                        thickness: 1,
+                                      ),
+                                      const TalkWidget(),
+                                    ],
+                                    // Add Divider after each HorizontalGridWidget and after LetsTalk
+                                    if (categoryCounter != categoryMap.length)
+                                      const Divider(
+                                        color: Color(0xFFD1D1D6),
+                                        thickness: 1,
+                                      ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                );
+                              } else {
+                                return Container(); // Return an empty container if no posts
+                              }
+                            }).toList(),
+                          );
                         }
                       },
-                    ),
-                    const Divider(
-                      color: Color(0xFFD1D1D6),
-                      thickness: 1,
-                    ),
-                    const SizedBox(height: 16),
-                    const TalkWidget(), // Your talk widget
-                    const SizedBox(height: 16),
-                    const Divider(
-                      color: Color(0xFFD1D1D6),
-                      thickness: 1,
                     ),
                   ],
                 ),
@@ -161,10 +215,7 @@ class HomePage extends StatelessWidget {
                         height: 64,
                       ),
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const UserProfilePage()),
-                        );
+                        // Navigate to user profile page
                       },
                     ),
                     // Search button (top-right)
@@ -175,10 +226,7 @@ class HomePage extends StatelessWidget {
                         height: 32,
                       ),
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const SearchPostsScreen()),
-                        );
+                        // Navigate to search posts page
                       },
                     ),
                   ],

@@ -97,16 +97,17 @@ class FavPostGrid extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 8.0), // Space between cells
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PostDetailPage(
-                              title: cellTitles[index],       // Pass title
-                              author: authors[index],         // Pass author
-                              content: cellInfos[index],      // Pass content/info
-                            ),
-                          ),
-                        );
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (context) => PostDetailPage(
+                        //       title: cellTitles[index],       // Pass title
+                        //       author: authors[index],         // Pass author
+                        //       category: "some", //  need to fetch real category here
+                        //       content: cellInfos[index],      // Pass content/info
+                        //     ),
+                        //   ),
+                        // ); MARK
                       },
                       child: Container(
                         width: 188,  // Cell width

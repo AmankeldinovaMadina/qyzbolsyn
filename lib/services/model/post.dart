@@ -2,9 +2,10 @@ class Post {
   final String id;
   final String title;
   final String author;
+  final String category;
   final List<Content> content;
 
-  Post({required this.id, required this.title, required this.author, required this.content});
+  Post({required this.id, required this.title, required this.author, required this.content, required this.category});
 
   factory Post.fromJson(Map<String, dynamic> json) {
     var contentList = json['content'] as List;
@@ -13,10 +14,13 @@ class Post {
     return Post(
       id: json['_id'],
       title: json['title'],
+      category: json['category'],
       author: json['author'],
       content: contentObjects,
     );
   }
+
+
 }
 
 class Content {
