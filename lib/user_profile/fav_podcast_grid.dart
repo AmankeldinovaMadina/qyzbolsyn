@@ -78,10 +78,10 @@ class FavPodcastGrid extends StatelessWidget {
                   return GestureDetector( // Wrap each cell with GestureDetector for navigation
                     onTap: () {
                       // Navigate to PodcastDetailScreen when tapped
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => PodcastDetailScreen()),
-                      );
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(builder: (context) => PodcastDetailScreen(title: '',)),
+                      // );
                     },
                     child: Padding(
                       padding: const EdgeInsets.only(right: 8.0), // Space between cells
