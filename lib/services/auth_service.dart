@@ -1,14 +1,24 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
-import 'package:last/auth/welcome_page.dart'; // Import WelcomePage
+import 'package:last/services/model/podcast.dart';
+import 'package:last/services/model/post.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../home/home.dart';
+import '../auth/welcome_page.dart';
+import 'package:http/http.dart' as http;
+
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+
 
   // Helper method to show toast messages
   void _showToast(String message) {
@@ -36,37 +46,33 @@ class AuthService {
     required String email,
     required String password,
     required BuildContext context,
-    String? username, // Optional username parameter
+    String? username,
   }) async {
     try {
-      final UserCredential userCredential = 
+      final UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Determine the display name
-      String displayName;
-      if (username != null && username.isNotEmpty) {
-        // Use the provided username
-        displayName = username;
-      } else {
-        // Generate a default username from the email
-        displayName = email.length >= 5 ? email.substring(0, 5) : email;
-      }
+      String displayName = username?.isNotEmpty == true
+          ? username!
+          : (email.length >= 5 ? email.substring(0, 5) : email);
 
-      // Update user profile
       await userCredential.user?.updateDisplayName(displayName);
 
-      print("Signup successful!");
+      // Save user profile in Firestore
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'email': email,
+        'displayName': displayName,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
       _navigateToHome(context);
     } on FirebaseAuthException catch (e) {
-      String message = _getAuthErrorMessage(e);
-      _showToast(message);
-      print("Error: $message");
+      _showToast(_getAuthErrorMessage(e));
     } catch (e) {
-      print("Unknown error: $e");
-      _showToast("An unexpected error occurred");
+      _showToast("An unexpected error occurred.");
     }
   }
 
@@ -76,104 +82,191 @@ class AuthService {
     required BuildContext context,
   }) async {
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
       _navigateToHome(context);
     } on FirebaseAuthException catch (e) {
-      String message = _getAuthErrorMessage(e);
-      _showToast(message);
+      _showToast(_getAuthErrorMessage(e));
     }
   }
 
-  Future<void> signout({
-    required BuildContext context,
-  }) async {
+  Future<void> signout({required BuildContext context}) async {
     try {
-      // Sign out from Firebase and Google
       await Future.wait([
         _auth.signOut(),
         _googleSignIn.signOut(),
       ]);
 
-      // Clear the "Remember Me" preference
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.remove('rememberMe'); // Remove the "rememberMe" key
+      await prefs.remove('rememberMe');
 
-      // Navigate to the WelcomePage
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (BuildContext context) => const WelcomePage(),
-        ),
+        MaterialPageRoute(builder: (BuildContext context) => const WelcomePage()),
       );
     } catch (e) {
-      _showToast("Error signing out");
-      print("Signout error: $e");
+      _showToast("Error signing out.");
     }
   }
 
-  // Enhanced Google Sign-In/Registration method
   Future<void> signInWithGoogle(BuildContext context) async {
     try {
-      // Begin interactive sign-in process
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return;
 
-      // Obtain auth details from request
-      final GoogleSignInAuthentication googleAuth = 
+      final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
-      // Create new credential for Firebase
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Sign in to Firebase with credential
-      final UserCredential userCredential = 
+      final UserCredential userCredential =
           await _auth.signInWithCredential(credential);
 
-      // Check if this is a new user
       if (userCredential.additionalUserInfo?.isNewUser ?? false) {
-        // This is a new user - perform additional registration steps
-        await _handleNewGoogleUser(userCredential.user, googleUser);
-        _showToast("Welcome! Your account has been created");
-      } else {
-        _showToast("Welcome back!");
+        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+          'email': userCredential.user!.email,
+          'displayName': userCredential.user!.displayName,
+          'photoURL': userCredential.user!.photoURL,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       }
 
       _navigateToHome(context);
     } catch (e) {
-      print("Google sign-in error: $e");
-      _showToast('Failed to sign in with Google');
+      _showToast('Failed to sign in with Google.');
     }
   }
 
-  // Helper method to handle new Google users
-  Future<void> _handleNewGoogleUser(User? firebaseUser, 
-      GoogleSignInAccount googleUser) async {
-    if (firebaseUser != null) {
-      // Update profile if needed
-      if (firebaseUser.displayName?.isEmpty ?? true) {
-        await firebaseUser.updateDisplayName(googleUser.displayName);
+  Future<void> addFavoritePost(String postId) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'favoritePosts': FieldValue.arrayUnion([postId]),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        _showToast("Failed to add favorite post.");
       }
-      if (firebaseUser.photoURL?.isEmpty ?? true) {
-        await firebaseUser.updatePhotoURL(googleUser.photoUrl);
-      }
-
-      // Here you can add additional user data to Firestore/RTDB if needed
-      // await _saveAdditionalUserData(firebaseUser.uid, {
-      //   'email': firebaseUser.email,
-      //   'name': firebaseUser.displayName,
-      //   'photoUrl': firebaseUser.photoURL,
-      //   'lastLogin': FieldValue.serverTimestamp(),
-      // });
+    } else {
+      _showToast("You must be logged in to perform this action.");
     }
   }
 
-  // Helper method to get auth error messages
+  Future<void> addFavoritePodcast(String podcastId) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'favoritePodcasts': FieldValue.arrayUnion([podcastId]),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        _showToast("Failed to add favorite podcast.");
+      }
+    } else {
+      _showToast("You must be logged in to perform this action.");
+    }
+  }
+
+  Future<void> removeFavoritePost(String postId) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'favoritePosts': FieldValue.arrayRemove([postId]),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        _showToast("Failed to remove favorite post.");
+      }
+    } else {
+      _showToast("You must be logged in to perform this action.");
+    }
+  }
+
+  Future<void> removeFavoritePodcast(String podcastId) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'favoritePodcasts': FieldValue.arrayRemove([podcastId]),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        _showToast("Failed to remove favorite podcast.");
+      }
+    } else {
+      _showToast("You must be logged in to perform this action.");
+    }
+  }
+
+Future<List<Post>> getFavoritePosts() async {
+  final user = _auth.currentUser;
+  if (user != null) {
+    try {
+      // Fetch IDs from Firestore
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      List<String> postIds = List<String>.from(doc.data()?['favoritePosts'] ?? []);
+
+      // Fetch details from the backend
+      List<Post> posts = [];
+      for (String postId in postIds) {
+        final response = await http.get(
+          Uri.parse('https://qyzbolsyn-backend-3.onrender.com/posts/posts/$postId'),
+          headers: {'accept': 'application/json'},
+        );
+
+        if (response.statusCode == 200) {
+          // Decode the response using utf8 and map to Post
+          Map<String, dynamic> postJson = json.decode(utf8.decode(response.bodyBytes));
+          posts.add(Post.fromJson(postJson)); // Use Post model to parse data
+        } else {
+          throw Exception('Failed to load post with ID: $postId');
+        }
+      }
+      return posts;
+    } catch (e) {
+      _showToast("Failed to fetch favorite posts.");
+      print(e);
+    }
+  }
+  return [];
+}
+
+
+Future<List<Podcast>> getFavoritePodcasts() async {
+  final user = _auth.currentUser;
+  if (user != null) {
+    try {
+      // Fetch IDs from Firestore
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      List<String> podcastIds = List<String>.from(doc.data()?['favoritePodcasts'] ?? []);
+
+      // Fetch details from the backend
+      List<Podcast> podcasts = [];
+      for (String podcastId in podcastIds) {
+        final response = await http.get(
+          Uri.parse('https://qyzbolsyn-backend-3.onrender.com/podcasts/podcasts/$podcastId'),
+          headers: {'accept': 'application/json'},
+        );
+
+        if (response.statusCode == 200) {
+          // Decode the response using utf8 and map to Podcast
+          Map<String, dynamic> podcastJson = json.decode(utf8.decode(response.bodyBytes));
+          podcasts.add(Podcast.fromJson(podcastJson)); // Use Podcast model to parse data
+        } else {
+          throw Exception('Failed to load podcast with ID: $podcastId');
+        }
+      }
+      return podcasts;
+    } catch (e) {
+      _showToast("Failed to fetch favorite podcasts.");
+      print(e);
+    }
+  }
+  return [];
+}
+
+
   String _getAuthErrorMessage(FirebaseAuthException e) {
     switch (e.code) {
       case 'weak-password':

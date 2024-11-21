@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:last/posts/post_detail_page.dart';
 import 'package:last/services/model/podcast.dart';
@@ -22,6 +24,7 @@ String _getCategoryName(String category) {
   }
 }
 
+// PodcastDetailScreen: Updated
 class PodcastDetailScreen extends StatefulWidget {
   final String podcastId; // Accept podcastId as a parameter
 
@@ -129,7 +132,7 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
                 children: [
                   // Use _getCategoryName to display the category in Russian
                   TagWidget(label: _getCategoryName(podcast!.category)),
-                  LikeableTagWidget(label: 'В избранное'),
+                  LikeableTagWidget(label: 'В избранное', podcastId: podcast!.id), // Add Likeable widget for podcasts
                   TagWidget(label: '${podcast!.videoLength} минуты'),
                 ],
               ),
@@ -140,7 +143,7 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
               ),
               SizedBox(height: 8),
               Text(
-                podcast!.author,
+                'Автор: ${podcast!.author}',
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
               SizedBox(height: 16),
@@ -165,6 +168,94 @@ class _PodcastDetailScreenState extends State<PodcastDetailScreen> {
     );
   }
 }
+
+// LikeableTagWidget for Podcasts
+class LikeableTagWidget extends StatefulWidget {
+  final String label;
+  final String podcastId; // Podcast ID for Firestore
+
+  const LikeableTagWidget({Key? key, required this.label, required this.podcastId}) : super(key: key);
+
+  @override
+  _LikeableTagWidgetState createState() => _LikeableTagWidgetState();
+}
+
+class _LikeableTagWidgetState extends State<LikeableTagWidget> {
+  bool _isLiked = false;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfLiked(); // Check the initial like status
+  }
+
+  // Method to check if the podcast is liked
+  Future<void> _checkIfLiked() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+      Map<String, dynamic>? userData = userDoc.data() as Map<String, dynamic>?;
+      List<dynamic> favoritePodcasts = userData?['favoritePodcasts'] ?? [];
+      setState(() {
+        _isLiked = favoritePodcasts.contains(widget.podcastId);
+      });
+    }
+  }
+
+  // Method to toggle like status and update Firestore
+  Future<void> _toggleLike() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      DocumentReference userRef = _firestore.collection('users').doc(user.uid);
+
+      if (_isLiked) {
+        // Remove from favorites
+        await userRef.update({
+          'favoritePodcasts': FieldValue.arrayRemove([widget.podcastId])
+        });
+      } else {
+        // Add to favorites
+        await userRef.set({
+          'favoritePodcasts': FieldValue.arrayUnion([widget.podcastId])
+        }, SetOptions(merge: true));
+      }
+
+      // Toggle the like state
+      setState(() {
+        _isLiked = !_isLiked;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _toggleLike,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _isLiked ? Icons.favorite : Icons.favorite_border,
+              color: const Color(0xFFC575C7), // Heart icon color
+              size: 16,
+            ),
+            const SizedBox(width: 4),
+            Text(widget.label),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 
 class TimestampWidget extends StatelessWidget {
   final String time;

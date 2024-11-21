@@ -126,7 +126,7 @@ class UserProfilePage extends StatelessWidget {
             // Horizontal grid with padding
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: FavPostGrid(),
+              child: FavoritePostsGrid(favoritePostIds: [],),
             ),
 
             const SizedBox(height: 20),
@@ -140,7 +140,7 @@ class UserProfilePage extends StatelessWidget {
             // Podcast horizontal grid with padding
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: FavPodcastGrid(),
+              child: FavoritePodcastsGrid(favoritePodcastIds: [],),
             ),
           ],
         ),

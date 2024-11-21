@@ -40,6 +40,7 @@ class HorizontalGridWidget extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => PostDetailPage(
+                        id: post.id,
                         title: post.title,
                         category: post.category,
                         author: post.author,

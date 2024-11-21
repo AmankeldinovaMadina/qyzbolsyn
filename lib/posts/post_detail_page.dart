@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:last/services/model/post.dart';
 
 class PostDetailPage extends StatelessWidget {
   final String title;
   final String author;
   final String category;
-  final List<Content> content; // Update content to be a list of Content objects
+  final List<Content> content; // List of Content objects
+  final String id; // Post ID for identifying the post
 
   const PostDetailPage({
     Key? key,
@@ -13,6 +16,7 @@ class PostDetailPage extends StatelessWidget {
     required this.author,
     required this.category,
     required this.content,
+    required this.id,
   }) : super(key: key);
 
   // Mapping of categories from the database to the Russian version
@@ -57,7 +61,7 @@ class PostDetailPage extends StatelessWidget {
                         },
                         child: const Icon(
                           Icons.chevron_left,
-                          color: Color(0xFFFA7BFD), // Set to your desired color
+                          color: Color(0xFFFA7BFD), // Your desired color
                           size: 42,
                         ),
                       ),
@@ -68,14 +72,14 @@ class PostDetailPage extends StatelessWidget {
                         width: 150, // Set your fixed width
                         height: 30, // Set your fixed height
                         child: Text(
-                          title, // Your title or description text
+                          title,
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
-                          maxLines: 1, // Limit to a single line
-                          overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis (...)
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis, // Handle overflow
                         ),
                       ),
                     ),
@@ -85,10 +89,10 @@ class PostDetailPage extends StatelessWidget {
 
               // Image section
               Image.asset(
-                'assets/images/article_cover.png', // Replace with your image asset if needed
-                width: MediaQuery.of(context).size.width, // Full screen width
-                height: 280, // Fixed height for the image
-                fit: BoxFit.cover, // Cover the available space
+                'assets/images/article_cover.png', // Your image asset
+                width: MediaQuery.of(context).size.width,
+                height: 280,
+                fit: BoxFit.cover,
               ),
 
               const SizedBox(height: 16),
@@ -105,8 +109,8 @@ class PostDetailPage extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        TagWidget(label: _getCategoryName(category)), // Custom tag widget with mapped category
-                        LikeableTagWidget(label: 'В избранное'), // Custom Likeable widget
+                        TagWidget(label: _getCategoryName(category)), // Custom tag widget
+                        LikeableTagWidget(label: 'В избранное', postId: id), // Updated Likeable widget
                         TagWidget(label: author),
                       ],
                     ),
@@ -140,7 +144,7 @@ class PostDetailPage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                item.headline, // Headline in bold
+                                item.headline,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -148,10 +152,10 @@ class PostDetailPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                item.text, // Text in regular style
+                                item.text,
                                 style: const TextStyle(
                                   fontSize: 16,
-                                  height: 1.5, // Adjust line height for readability
+                                  height: 1.5, // Adjust line height
                                 ),
                               ),
                             ],
@@ -170,7 +174,7 @@ class PostDetailPage extends StatelessWidget {
   }
 }
 
-// Tag widget for displaying tags (same as in your Podcast page)
+// Tag widget for displaying tags
 class TagWidget extends StatelessWidget {
   final String label;
 
@@ -189,11 +193,12 @@ class TagWidget extends StatelessWidget {
   }
 }
 
-// Likeable tag widget for "В избранное" (same as in your Podcast page)
+// Likeable tag widget for "В избранное" with Firestore integration
 class LikeableTagWidget extends StatefulWidget {
   final String label;
+  final String postId; // Post ID for Firestore
 
-  const LikeableTagWidget({Key? key, required this.label}) : super(key: key);
+  const LikeableTagWidget({Key? key, required this.label, required this.postId}) : super(key: key);
 
   @override
   _LikeableTagWidgetState createState() => _LikeableTagWidgetState();
@@ -201,11 +206,52 @@ class LikeableTagWidget extends StatefulWidget {
 
 class _LikeableTagWidgetState extends State<LikeableTagWidget> {
   bool _isLiked = false;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  void _toggleLike() {
-    setState(() {
-      _isLiked = !_isLiked;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _checkIfLiked(); // Check the initial like status
+  }
+
+  // Method to check if the post is liked
+  Future<void> _checkIfLiked() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+      // Safely cast the data to a Map<String, dynamic>
+      Map<String, dynamic>? userData = userDoc.data() as Map<String, dynamic>?;
+      List<dynamic> favoritePosts = userData?['favoritePosts'] ?? [];
+      setState(() {
+        _isLiked = favoritePosts.contains(widget.postId);
+      });
+    }
+  }
+
+  // Method to toggle like status and update Firestore
+  Future<void> _toggleLike() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      DocumentReference userRef = _firestore.collection('users').doc(user.uid);
+
+      if (_isLiked) {
+        // Remove from favorites
+        await userRef.update({
+          'favoritePosts': FieldValue.arrayRemove([widget.postId])
+        });
+      } else {
+        // Add to favorites
+        await userRef.set({
+          'favoritePosts': FieldValue.arrayUnion([widget.postId])
+        }, SetOptions(merge: true));
+      }
+
+      // Toggle the like state
+      setState(() {
+        _isLiked = !_isLiked;
+      });
+    }
   }
 
   @override
@@ -233,4 +279,4 @@ class _LikeableTagWidgetState extends State<LikeableTagWidget> {
       ),
     );
   }
-}
+} 
