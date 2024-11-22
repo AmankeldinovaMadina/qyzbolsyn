@@ -1,9 +1,15 @@
-import 'package:flutter/material.dart'; 
+import 'package:flutter/material.dart';
 import 'package:last/home/forum/topic.dart';
+import 'package:last/services/talk_service.dart';
+import 'package:last/services/model/talk.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'message_bubble.dart'; // Import your MessageBubble widget
+import 'package:timeago/timeago.dart' as timeago;
 
 class TalkingPage extends StatefulWidget {
-  const TalkingPage({super.key});
+  final String talkId;
+
+  const TalkingPage({super.key, required this.talkId});
 
   @override
   _TalkingPageState createState() => _TalkingPageState();
@@ -12,6 +18,7 @@ class TalkingPage extends StatefulWidget {
 class _TalkingPageState extends State<TalkingPage> {
   final TextEditingController _messageController = TextEditingController(); // Controller for input field
   List<Map<String, String>> messages = []; // Initialize the messages list
+  late Future<Talk> futureTalk; // Future to fetch the talk data
 
   // List of background images to cycle through
   final List<String> backgrounds = [
@@ -23,20 +30,47 @@ class _TalkingPageState extends State<TalkingPage> {
     'assets/podcasts/six.svg',
   ];
 
-  void _sendMessage() {
+  @override
+  void initState() {
+    super.initState();
+    futureTalk = TalkService().fetchLastTalk(); // Fetch the last talk
+  }
+
+  void _sendMessage(String talkId) async {
     String messageText = _messageController.text;
     if (messageText.trim().isNotEmpty) {
-      setState(() {
-        // Add message to the list
-        messages.add({
-          "username": "You",
-          "profileImageUrl": "assets/images/avatar.png", // Replace with the user's image path
-          "timeAgo": "Just now",
-          "message": messageText,
-          "backgroundAsset": backgrounds[messages.length % backgrounds.length], // Cycle through backgrounds
+      // Fetch the logged-in user's name
+      User? user = FirebaseAuth.instance.currentUser;
+      String username = user?.displayName ?? "Anonymous"; // Default to "Anonymous" if no name is available
+
+      try {
+        // Call the backend to add the message
+        Talk updatedTalk = await TalkService().addAnswerToTalk(
+          talkId: talkId,
+          username: username, // Use the authenticated user's name
+          bodyMsg: messageText,
+        );
+
+        // Add the new message to the local list
+        setState(() {
+          messages.add({
+            "username": username,
+            "profileImageUrl": "assets/images/avatar.png", // Replace with dynamic profile image if needed
+            "timeAgo": "Just now", // Immediate feedback
+            "message": messageText,
+            "backgroundAsset": backgrounds[messages.length % backgrounds.length],
+          });
         });
-      });
-      _messageController.clear(); // Clear the input field after sending
+
+        // Clear the input field after sending the message
+        _messageController.clear();
+      } catch (e) {
+        // Show an error message if the API call fails
+        print("Failed to send message: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to send message: $e")),
+        );
+      }
     }
   }
 
@@ -69,66 +103,98 @@ class _TalkingPageState extends State<TalkingPage> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      body: FutureBuilder<Talk>(
+        future: futureTalk,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (snapshot.hasData) {
+            final talk = snapshot.data!;
+
+            // Only populate messages if they are empty to prevent overwriting local changes
+            if (messages.isEmpty) {
+              messages = talk.answers
+                  .map((answer) => {
+                        "username": answer['username'] ?? "Unknown",
+                        "profileImageUrl": "assets/images/avatar.png", // Replace with dynamic profile image
+                        "timeAgo": timeago.format(DateTime.parse(answer['created_at']).toLocal()), // Human-readable time
+                        "message": answer['bodyMsg'] ?? "",
+                        "backgroundAsset": backgrounds[messages.length % backgrounds.length],
+                      })
+                  .map((e) => e.map((key, value) => MapEntry(key, value.toString()))) // Ensure String values
+                  .toList();
+            }
+
+            return Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        TalkTopicWidget(), // Your talk widget
-                        const SizedBox(height: 16),
-                        const Divider(
-                          color: Color(0xFFD1D1D6),
-                          thickness: 1,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              TalkTopicWidget(), // Your original widget for the topic
+                              const SizedBox(height: 16),
+                              const Divider(
+                                color: Color(0xFFD1D1D6),
+                                thickness: 1,
+                              ),
+                            ],
+                          ),
                         ),
+                        // Displaying list of message bubbles
+                        if (messages.isEmpty)
+                          const Center(child: Text('No messages yet.')), // Show if no messages
+                        if (messages.isNotEmpty)
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(), // Disable scrolling inside ListView
+                            itemCount: messages.length,
+                            itemBuilder: (context, index) {
+                              final message = messages[index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                child: MessageBubble(
+                                  username: message['username'] ?? 'Unknown',
+                                  profileImageUrl: message['profileImageUrl'] ?? 'assets/avatar.png',
+                                  timeAgo: message['timeAgo'] ?? '',
+                                  message: message['message'] ?? '',
+                                  backgroundAsset: message['backgroundAsset']!,
+                                ),
+                              );
+                            },
+                          ),
                       ],
                     ),
                   ),
-                  // Displaying list of message bubbles
-                  if (messages.isEmpty)
-                    const Center(child: Text('No messages yet.')), // Show if no messages
-                  if (messages.isNotEmpty)
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(), // Disable scrolling inside ListView
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final message = messages[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Horizontal padding for message bubbles
-                          child: MessageBubble(
-                            username: message['username'] ?? 'Unknown',
-                            profileImageUrl: message['profileImageUrl'] ?? 'assets/avatar.png',
-                            timeAgo: message['timeAgo'] ?? '',
-                            message: message['message'] ?? '',
-                            backgroundAsset: message['backgroundAsset']!, // Each message has a unique background
-                          ),
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ),
-          ),
-          // Input field at the bottom
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: inputField(controller: _messageController, onSendPressed: _sendMessage),
-          ),
-          const SizedBox(height: 10), // Space below input field
-        ],
+                ),
+                // Input field at the bottom
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: inputField(
+                    controller: _messageController,
+                    onSendPressed: () => _sendMessage(talk.id), // Pass the talk ID to _sendMessage
+                  ),
+                ),
+                const SizedBox(height: 10), // Space below input field
+              ],
+            );
+          } else {
+            return const Center(child: Text('No data available.'));
+          }
+        },
       ),
     );
   }
 }
 
-// Input Field Widget with the same icon as back button but rotated
+// Input Field Widget
 Widget inputField({
   required TextEditingController controller,
   required VoidCallback onSendPressed,
