@@ -70,6 +70,7 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     _loadMessages();
+    _sendDailyAffirmation(); // Send daily affirmation
   }
 
   Future<void> _loadMessages() async {
@@ -112,6 +113,34 @@ class _ChatPageState extends State<ChatPage> {
     prefs.setString('chatMessages', json.encode(_messages));
   }
 
+  Future<void> _sendDailyAffirmation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final int today = DateTime.now().weekday; // Get current weekday (1 = Monday, 7 = Sunday)
+
+      // Check if the affirmation for today has already been sent
+      int? lastAffirmationDay = prefs.getInt('lastAffirmationDay');
+      if (lastAffirmationDay == today) return;
+
+      // Fetch the daily affirmation
+      String affirmation = await _chatService.fetchDailyAffirmation(today);
+
+      setState(() {
+        _messages.add({
+          'role': 'assistant',
+          'content': affirmation,
+          'time': _formatTime(),
+        });
+      });
+
+      // Save the last affirmation day and updated messages
+      prefs.setInt('lastAffirmationDay', today);
+      await _saveMessages();
+    } catch (e) {
+      print("Error sending daily affirmation: $e");
+    }
+  }
+
   Future<void> _sendMessage() async {
     String messageText = _messageController.text;
 
@@ -126,7 +155,7 @@ class _ChatPageState extends State<ChatPage> {
       });
 
       _messageController.clear();
-      await _saveMessages();  // Save message history after adding the user's message
+      await _saveMessages(); // Save message history after adding the user's message
 
       try {
         // Prepare the chat history for the API request, including the hidden system prompt
@@ -140,7 +169,7 @@ class _ChatPageState extends State<ChatPage> {
           }).toList(),
         ];
 
-        // Send the message history to OpenAI
+        // Send the message history to the chat service
         String response = await _chatService.sendMessage(chatHistory);
 
         setState(() {
@@ -150,7 +179,7 @@ class _ChatPageState extends State<ChatPage> {
             'time': _formatTime(),
           });
         });
-        await _saveMessages();  // Save updated message history
+        await _saveMessages(); // Save updated message history
       } catch (e) {
         print("Error: $e");
         setState(() {
@@ -164,7 +193,7 @@ class _ChatPageState extends State<ChatPage> {
         setState(() {
           _isLoading = false;
         });
-        await _saveMessages();  // Save messages in case of an error
+        await _saveMessages(); // Save messages in case of an error
       }
     }
   }

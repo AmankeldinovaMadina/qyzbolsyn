@@ -49,4 +49,28 @@ class ChatService {
       throw Exception('Failed to load response');
     }
   }
+
+
+
+
+    final String _baseUrl = 'https://qyzbolsyn-backend-3.onrender.com';
+
+  Future<String> fetchDailyAffirmation(int day) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/affirmations/affirmations/$day'),
+        headers: {'accept': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        // Decode the response using utf8
+        Map<String, dynamic> jsonResponse = json.decode(utf8.decode(response.bodyBytes));
+        return jsonResponse['affirmation']; // Extract the affirmation from the JSON
+      } else {
+        throw Exception('Failed to fetch affirmation');
+      }
+    } catch (e) {
+      throw Exception('Error fetching affirmation: $e');
+    }
+  }
 }
