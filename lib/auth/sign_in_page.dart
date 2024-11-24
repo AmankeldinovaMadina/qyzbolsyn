@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:last/auth/forget_password.dart';
 import 'package:last/home/home.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Import shared_preferences
 import 'package:last/auth/register_page.dart'; 
@@ -137,7 +138,12 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                     TextButton(
                       onPressed: () {
-                        // Handle forgot password action
+                         Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ForgotPasswordPage(),
+                    ),
+                  );
                       },
                       child: const Text(
                         'Забыли пароль?',
@@ -184,24 +190,24 @@ class _SignInPageState extends State<SignInPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.black12),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: Image.asset('assets/icons/facebook.png', height: 24),
-                        label: const Text('Facebook', style: TextStyle(color: Colors.black)),
-                        onPressed: () {
-                          // Handle Facebook login
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                    // Expanded(
+                    //   child: ElevatedButton.icon(
+                    //     style: ElevatedButton.styleFrom(
+                    //       backgroundColor: Colors.white,
+                    //       side: const BorderSide(color: Colors.black12),
+                    //       padding: const EdgeInsets.symmetric(vertical: 12),
+                    //       shape: RoundedRectangleBorder(
+                    //         borderRadius: BorderRadius.circular(12),
+                    //       ),
+                    //     ),
+                    //     icon: Image.asset('assets/icons/facebook.png', height: 24),
+                    //     label: const Text('Facebook', style: TextStyle(color: Colors.black)),
+                    //     onPressed: () {
+                    //       // Handle Facebook login
+                    //     },
+                    //   ),
+                    // ),
+                    // const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(

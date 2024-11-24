@@ -267,6 +267,21 @@ Future<List<Podcast>> getFavoritePodcasts() async {
 }
 
 
+Future<void> resetPassword({
+  required String email,
+  required BuildContext context,
+}) async {
+  try {
+    await _auth.sendPasswordResetEmail(email: email);
+    _showToast('A password reset link has been sent to $email.');
+  } on FirebaseAuthException catch (e) {
+    _showToast(_getAuthErrorMessage(e));
+  } catch (e) {
+    _showToast('An unexpected error occurred. Please try again.');
+  }
+}
+
+
   String _getAuthErrorMessage(FirebaseAuthException e) {
     switch (e.code) {
       case 'weak-password':
