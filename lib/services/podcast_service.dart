@@ -25,6 +25,22 @@ class PodcastService {
       throw Exception('Failed to load podcasts');
     }
   }
+  
+  final String _baseUrl = 'https://qyzbolsyn-backend-3.onrender.com';
+
+  Future<Podcast> fetchLatestPodcast() async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/podcasts/podcasts/latest'),
+      headers: {'accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonResponse = json.decode(utf8.decode(response.bodyBytes));
+      return Podcast.fromJson(jsonResponse);
+    } else {
+      throw Exception('Failed to fetch the latest podcast');
+    }
+  }
 
   // Method to fetch a single podcast by ID
   Future<Podcast> fetchPodcastById(String podcastId) async {
