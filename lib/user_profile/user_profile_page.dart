@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:last/auth/forget_password.dart';
 import 'package:url_launcher/url_launcher.dart'; // Import url_launcher package
 import 'package:last/services/auth_service.dart'; // Import AuthService for logout functionality
+
 
 class UserProfilePageEdit extends StatelessWidget {
   const UserProfilePageEdit({Key? key}) : super(key: key);
@@ -71,19 +73,19 @@ class UserProfilePageEdit extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             // Personal Information Section (no edit icons)
-            buildInfoSection('Личная информация', color: Color(0xFF979797)), // Updated color
+            buildInfoSection('Личная информация', color: Color(0xFF979797)),
             buildNonEditableField(userName),
             buildNonEditableField(userEmail),
             const SizedBox(height: 24),
             // Password Section (only password has edit icon)
-            buildInfoSection('Пароль', color: Color(0xFF979797)), // Updated color
-            buildEditableField('********', Icons.edit),
+            buildInfoSection('Пароль', color: Color(0xFF979797)),
+            buildEditableField(context, '********', Icons.edit),
             Spacer(),
             // Support and Log Out buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                buildActionButton('Служба поддержки', Color(0xFFFA7BFD), _sendSupportEmail),
+                // buildActionButton('Служба поддержки', Color(0xFFFA7BFD), _sendSupportEmail),
                 buildActionButton('Выйти', Color(0xFFFA7BFD), () async {
                   await AuthService().signout(context: context); // Logout functionality
                 }),
@@ -120,7 +122,7 @@ class UserProfilePageEdit extends StatelessWidget {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.normal,
-          color: color, // Use the provided color (now #979797)
+          color: color,
         ),
       ),
     );
@@ -147,7 +149,7 @@ class UserProfilePageEdit extends StatelessWidget {
   }
 
   // Helper method to build an editable text field with an edit icon (for password only)
-  Widget buildEditableField(String text, IconData icon) {
+  Widget buildEditableField(BuildContext context, String text, IconData icon) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -164,7 +166,13 @@ class UserProfilePageEdit extends StatelessWidget {
           IconButton(
             icon: Icon(icon, color: Color(0xFFFA7BFD)), // Keep icon for password field only
             onPressed: () {
-              // Edit field functionality for password
+              // Navigate to the ForgotPasswordPage when the edit icon is pressed
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ForgotPasswordPage(),
+                ),
+              );
             },
           ),
         ],
