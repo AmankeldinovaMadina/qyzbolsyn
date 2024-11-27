@@ -4,7 +4,6 @@ import 'package:last/auth/forget_password.dart';
 import 'package:url_launcher/url_launcher.dart'; // Import url_launcher package
 import 'package:last/services/auth_service.dart'; // Import AuthService for logout functionality
 
-
 class UserProfilePageEdit extends StatelessWidget {
   const UserProfilePageEdit({Key? key}) : super(key: key);
 
@@ -39,26 +38,14 @@ class UserProfilePageEdit extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Profile Picture with Edit Icon
+            // Profile Picture without Edit Icon
             Stack(
-              alignment: Alignment.bottomRight,
+              alignment: Alignment.center,
               children: [
                 CircleAvatar(
                   radius: 50,
                   backgroundImage: AssetImage('assets/images/avatar.png'), // Replace with your image asset
                   backgroundColor: Colors.black,
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Color(0xFFFA7BFD),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.edit, size: 16, color: Colors.white),
-                    onPressed: () {
-                      // Edit profile picture functionality
-                    },
-                  ),
                 ),
               ],
             ),
@@ -85,9 +72,8 @@ class UserProfilePageEdit extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // buildActionButton('Служба поддержки', Color(0xFFFA7BFD), _sendSupportEmail),
                 buildActionButton('Удалить аккаунт', Color(0xFFFA7BFD), () async {
-                  await AuthService().deleteAccount(context); // Logout functionality
+                  await AuthService().deleteAccount(context); // Delete account functionality
                 }),
                 buildActionButton('Выйти', Color(0xFFFA7BFD), () async {
                   await AuthService().signout(context: context); // Logout functionality

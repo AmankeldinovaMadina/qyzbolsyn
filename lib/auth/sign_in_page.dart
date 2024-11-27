@@ -190,24 +190,25 @@ class _SignInPageState extends State<SignInPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // Expanded(
-                    //   child: ElevatedButton.icon(
-                    //     style: ElevatedButton.styleFrom(
-                    //       backgroundColor: Colors.white,
-                    //       side: const BorderSide(color: Colors.black12),
-                    //       padding: const EdgeInsets.symmetric(vertical: 12),
-                    //       shape: RoundedRectangleBorder(
-                    //         borderRadius: BorderRadius.circular(12),
-                    //       ),
-                    //     ),
-                    //     icon: Image.asset('assets/icons/facebook.png', height: 24),
-                    //     label: const Text('Facebook', style: TextStyle(color: Colors.black)),
-                    //     onPressed: () {
-                    //       // Handle Facebook login
-                    //     },
-                    //   ),
-                    // ),
-                    // const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.black12),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: Image.asset('assets/icons/Apple.png', height: 24),
+                        label: const Text('Apple', style: TextStyle(color: Colors.black)),
+                        onPressed: () async {
+                          await AuthService().signInWithApple(context);
+                        },
+
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
