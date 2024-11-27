@@ -319,6 +319,38 @@ Future<void> resetPassword({
   }
 }
 
+Future<void> deleteAccount(BuildContext context) async {
+  final user = _auth.currentUser;
+  if (user != null) {
+    try {
+      // Delete the user's Firestore document
+      await _firestore.collection('users').doc(user.uid).delete();
+
+      // Delete the user account from Firebase Authentication
+      await user.delete();
+
+      // Show a success message
+      _showToast("Your account has been deleted successfully.");
+
+      // Navigate to the Welcome page after deletion
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const WelcomePage()),
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        _showToast("Please log in again to delete your account.");
+      } else {
+        _showToast("An error occurred while deleting the account.");
+      }
+    } catch (e) {
+      _showToast("An unexpected error occurred. Please try again.");
+    }
+  } else {
+    _showToast("No user is logged in.");
+  }
+}
 
   String _getAuthErrorMessage(FirebaseAuthException e) {
     switch (e.code) {

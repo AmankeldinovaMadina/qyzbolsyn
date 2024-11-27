@@ -86,6 +86,9 @@ class UserProfilePageEdit extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // buildActionButton('Служба поддержки', Color(0xFFFA7BFD), _sendSupportEmail),
+                buildActionButton('Удалить аккаунт', Color(0xFFFA7BFD), () async {
+                  await AuthService().deleteAccount(context); // Logout functionality
+                }),
                 buildActionButton('Выйти', Color(0xFFFA7BFD), () async {
                   await AuthService().signout(context: context); // Logout functionality
                 }),
