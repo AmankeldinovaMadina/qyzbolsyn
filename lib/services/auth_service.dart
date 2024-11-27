@@ -8,6 +8,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:last/services/model/podcast.dart';
 import 'package:last/services/model/post.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../home/home.dart';
 import '../auth/welcome_page.dart';
 import 'package:http/http.dart' as http;
@@ -105,6 +106,43 @@ class AuthService {
       );
     } catch (e) {
       _showToast("Error signing out.");
+    }
+  }
+
+  // Apple Sign-In Method
+  Future<void> signInWithApple(BuildContext context) async {
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oAuthProvider = OAuthProvider('apple.com');
+      final credential = oAuthProvider.credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+
+      // Save user data if it's a new user
+      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+          'email': appleCredential.email ?? '',
+          'displayName': appleCredential.givenName != null
+              ? '${appleCredential.givenName} ${appleCredential.familyName}'
+              : 'Apple User',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      _navigateToHome(context);
+    } catch (e) {
+      _showToast('Failed to sign in with Apple.');
+      print(e);
     }
   }
 

@@ -46,7 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '696852908136',
     projectId: 'qyzbolsyn-app-15',
     authDomain: 'qyzbolsyn-app-15.firebaseapp.com',
-    storageBucket: 'qyzbolsyn-app-15.appspot.com',
+    storageBucket: 'qyzbolsyn-app-15.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -54,7 +54,7 @@ class DefaultFirebaseOptions {
     appId: '1:696852908136:android:8c6bb3c0f2e9cc419693dd',
     messagingSenderId: '696852908136',
     projectId: 'qyzbolsyn-app-15',
-    storageBucket: 'qyzbolsyn-app-15.appspot.com',
+    storageBucket: 'qyzbolsyn-app-15.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -62,7 +62,8 @@ class DefaultFirebaseOptions {
     appId: '1:696852908136:ios:2e2eb917f79151609693dd',
     messagingSenderId: '696852908136',
     projectId: 'qyzbolsyn-app-15',
-    storageBucket: 'qyzbolsyn-app-15.appspot.com',
+    storageBucket: 'qyzbolsyn-app-15.firebasestorage.app',
+    iosClientId: '696852908136-qtmdjj585b5u1msh4sbd6l6fcfkjmsa7.apps.googleusercontent.com',
     iosBundleId: 'com.example.last',
   );
 
@@ -71,7 +72,8 @@ class DefaultFirebaseOptions {
     appId: '1:696852908136:ios:2e2eb917f79151609693dd',
     messagingSenderId: '696852908136',
     projectId: 'qyzbolsyn-app-15',
-    storageBucket: 'qyzbolsyn-app-15.appspot.com',
+    storageBucket: 'qyzbolsyn-app-15.firebasestorage.app',
+    iosClientId: '696852908136-qtmdjj585b5u1msh4sbd6l6fcfkjmsa7.apps.googleusercontent.com',
     iosBundleId: 'com.example.last',
   );
 
@@ -81,6 +83,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '696852908136',
     projectId: 'qyzbolsyn-app-15',
     authDomain: 'qyzbolsyn-app-15.firebaseapp.com',
-    storageBucket: 'qyzbolsyn-app-15.appspot.com',
+    storageBucket: 'qyzbolsyn-app-15.firebasestorage.app',
   );
+
 }

@@ -49,15 +49,17 @@ class RegisterPage extends StatelessWidget {
               const SizedBox(height: 20),
 
               // Continue with Apple Button
-              // SignInOptionButton(
-              //   text: 'Продолжить через Apple',
-              //   icon: Icons.apple,
-              //   color: Colors.white,
-              //   textColor: Colors.black,
-              //   onPressed: () {
-              //     // Handle Apple sign-in
-              //   },
-              // ),
+              SignInOptionButton(
+              text: 'Продолжить через Apple',
+              icon: Icons.apple,
+              color: Colors.white,
+              textColor: Colors.black,
+              onPressed: () async {
+                // Call the Apple sign-in method from AuthService
+                await AuthService().signInWithApple(context);
+              },
+            ),
+
               const SizedBox(height: 20),
 
               // Continue with Email Button
