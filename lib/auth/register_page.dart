@@ -42,7 +42,7 @@ class RegisterPage extends StatelessWidget {
                 iconImage: 'assets/icons/google_logo.png',
                 onPressed: () async {
                   // Call the Google sign-in method from AuthService
-                  await AuthService().signInWithGoogle(context);
+                  await AuthService().registerUserWithGoogle(context);
                 },
               ),
 
@@ -56,7 +56,7 @@ class RegisterPage extends StatelessWidget {
               textColor: Colors.black,
               onPressed: () async {
                 // Call the Apple sign-in method from AuthService
-                await AuthService().signInWithApple(context);
+                await AuthService().registerUserWithApple(context);
               },
             ),
 

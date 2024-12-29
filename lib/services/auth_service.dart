@@ -110,72 +110,77 @@ class AuthService {
   }
 
   // Apple Sign-In Method
-  Future<void> signInWithApple(BuildContext context) async {
-    try {
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-      );
+Future<void> signInWithApple(BuildContext context) async {
+  try {
+    final appleCredential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+    );
 
-      final oAuthProvider = OAuthProvider('apple.com');
-      final credential = oAuthProvider.credential(
-        idToken: appleCredential.identityToken,
-        accessToken: appleCredential.authorizationCode,
-      );
+    final oAuthProvider = OAuthProvider('apple.com');
+    final credential = oAuthProvider.credential(
+      idToken: appleCredential.identityToken,
+      accessToken: appleCredential.authorizationCode,
+    );
 
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+    final UserCredential userCredential =
+        await _auth.signInWithCredential(credential);
 
-      // Save user data if it's a new user
-      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
-        await _firestore.collection('users').doc(userCredential.user!.uid).set({
-          'email': appleCredential.email ?? '',
-          'displayName': appleCredential.givenName != null
-              ? '${appleCredential.givenName} ${appleCredential.familyName}'
-              : 'Apple User',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      _navigateToHome(context);
-    } catch (e) {
-      _showToast('Failed to sign in with Apple.');
-      print(e);
+    // Check if user exists in Firestore
+    final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+    if (!userDoc.exists) {
+      _showToast('User not registered. Please register first.');
+      return;
     }
+
+    _navigateToHome(context);
+  } catch (e) {
+    _showToast('Failed to sign in with Apple.');
+    print(e);
   }
+}
 
-  Future<void> signInWithGoogle(BuildContext context) async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return;
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
-
-      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
-        await _firestore.collection('users').doc(userCredential.user!.uid).set({
-          'email': userCredential.user!.email,
-          'displayName': userCredential.user!.displayName,
-          'photoURL': userCredential.user!.photoURL,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      _navigateToHome(context);
-    } catch (e) {
-      _showToast('Failed to sign in with Google.');
+Future<void> signInWithGoogle(BuildContext context) async {
+  try {
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) {
+      _showToast('Google sign-in was canceled.');
+      return;
     }
+
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final UserCredential userCredential =
+        await _auth.signInWithCredential(credential);
+
+    // Check if user exists in Firestore
+    final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+    if (!userDoc.exists) {
+      // Show toast message if the user is not registered
+      _showToast('User not registered. Please register first.');
+      return;
+    }
+
+    // Navigate to home if user exists
+    _navigateToHome(context);
+  } on FirebaseAuthException catch (e) {
+    _showToast('Authentication failed: ${_getAuthErrorMessage(e)}');
+    print(e);
+  } catch (e) {
+    _showToast('Failed to sign in with Google. Please try again.');
+    print(e);
   }
+}
+
+
 
   Future<void> addFavoritePost(String postId) async {
     final user = _auth.currentUser;
@@ -236,6 +241,79 @@ class AuthService {
       _showToast("You must be logged in to perform this action.");
     }
   }
+Future<void> registerUserWithGoogle(BuildContext context) async {
+  try {
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) return;
+
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
+
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final UserCredential userCredential =
+        await _auth.signInWithCredential(credential);
+
+    // Check if the user already exists
+    final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+    if (!userDoc.exists) {
+      // Register the new user
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'email': userCredential.user!.email,
+        'displayName': userCredential.user!.displayName ?? 'Google User',
+        'photoURL': userCredential.user!.photoURL,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    _navigateToHome(context);
+  } catch (e) {
+    _showToast('Failed to register with Google.');
+    print(e);
+  }
+}
+
+Future<void> registerUserWithApple(BuildContext context) async {
+  try {
+    final appleCredential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+    );
+
+    final oAuthProvider = OAuthProvider('apple.com');
+    final credential = oAuthProvider.credential(
+      idToken: appleCredential.identityToken,
+      accessToken: appleCredential.authorizationCode,
+    );
+
+    final UserCredential userCredential =
+        await _auth.signInWithCredential(credential);
+
+    // Check if the user already exists
+    final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+    if (!userDoc.exists) {
+      // Register the new user
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'email': appleCredential.email ?? '',
+        'displayName': appleCredential.givenName != null
+            ? '${appleCredential.givenName} ${appleCredential.familyName}'
+            : 'Apple User',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    _navigateToHome(context);
+  } catch (e) {
+    _showToast('Failed to register with Apple.');
+    print(e);
+  }
+}
+
 
 Future<List<Post>> getFavoritePosts() async {
   final user = _auth.currentUser;

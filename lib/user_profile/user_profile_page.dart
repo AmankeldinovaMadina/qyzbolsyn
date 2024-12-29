@@ -4,21 +4,59 @@ import 'package:last/auth/forget_password.dart';
 import 'package:url_launcher/url_launcher.dart'; // Import url_launcher package
 import 'package:last/services/auth_service.dart'; // Import AuthService for logout functionality
 
-class UserProfilePageEdit extends StatelessWidget {
+class UserProfilePageEdit extends StatefulWidget {
   const UserProfilePageEdit({Key? key}) : super(key: key);
 
   @override
+  _UserProfilePageEditState createState() => _UserProfilePageEditState();
+}
+
+class _UserProfilePageEditState extends State<UserProfilePageEdit> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TextEditingController _usernameController = TextEditingController();
+  bool _isEditingUsername = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _usernameController.text = _auth.currentUser?.displayName ?? 'No username';
+  }
+
+  Future<void> _updateUsername() async {
+    String newUsername = _usernameController.text.trim();
+    if (newUsername.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Username cannot be empty.")),
+      );
+      return;
+    }
+
+    try {
+      await _auth.currentUser?.updateDisplayName(newUsername);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Username updated successfully.")),
+      );
+      setState(() {
+        _isEditingUsername = false;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to update username: $e")),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    User? user = FirebaseAuth.instance.currentUser;
+    User? user = _auth.currentUser;
     String userEmail = user?.email ?? 'No email';
-    String userName = user?.displayName ?? 'No username';
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: Color(0xFFFA7BFD)),
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFFFA7BFD)),
           onPressed: () {
             Navigator.pop(context); // Back button functionality
           },
@@ -38,44 +76,24 @@ class UserProfilePageEdit extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Profile Picture without Edit Icon
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: AssetImage('assets/images/avatar.png'), // Replace with your image asset
-                  backgroundColor: Colors.black,
-                ),
-              ],
-            ),
             const SizedBox(height: 16),
-            // User Name
-            Text(
-              userName,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Personal Information Section (no edit icons)
-            buildInfoSection('Личная информация', color: Color(0xFF979797)),
-            buildNonEditableField(userName),
+            // Username Section
+            buildInfoSection('Личная информация', color: const Color(0xFF979797)),
+            buildEditableUsernameField(context),
             buildNonEditableField(userEmail),
             const SizedBox(height: 24),
-            // Password Section (only password has edit icon)
-            buildInfoSection('Пароль', color: Color(0xFF979797)),
-            buildEditableField(context, '********', Icons.edit),
-            Spacer(),
+            // Password Section
+            buildInfoSection('Пароль', color: const Color(0xFF979797)),
+            buildEditableFieldForPassword(context, '********', Icons.edit),
+            const Spacer(),
             // Support and Log Out buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                buildActionButton('Удалить аккаунт', Color(0xFFFA7BFD), () async {
+                buildActionButton('Удалить аккаунт', const Color(0xFFFA7BFD), () async {
                   await AuthService().deleteAccount(context); // Delete account functionality
                 }),
-                buildActionButton('Выйти', Color(0xFFFA7BFD), () async {
+                buildActionButton('Выйти', const Color(0xFFFA7BFD), () async {
                   await AuthService().signout(context: context); // Logout functionality
                 }),
               ],
@@ -117,50 +135,63 @@ class UserProfilePageEdit extends StatelessWidget {
     );
   }
 
-  // Helper method to build a non-editable text field (no edit icon)
-  Widget buildNonEditableField(String text) {
+  // Editable Field for Username with Edit/Check Icon Toggle
+  Widget buildEditableUsernameField(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
           Expanded(
             child: TextField(
-              enabled: false, // Make it non-editable
+              controller: _usernameController,
+              enabled: _isEditingUsername,
               decoration: InputDecoration(
-                border: UnderlineInputBorder(),
-                hintText: text,
+                border: const UnderlineInputBorder(),
+                hintText: _isEditingUsername ? 'Enter your username' : _usernameController.text,
               ),
             ),
+          ),
+          IconButton(
+            icon: Icon(
+              _isEditingUsername ? Icons.check : Icons.edit,
+              color: const Color(0xFFFA7BFD),
+            ),
+            onPressed: () {
+              if (_isEditingUsername) {
+                _updateUsername(); // Save username
+              } else {
+                setState(() {
+                  _isEditingUsername = true;
+                });
+              }
+            },
           ),
         ],
       ),
     );
   }
 
-  // Helper method to build an editable text field with an edit icon (for password only)
-  Widget buildEditableField(BuildContext context, String text, IconData icon) {
+  // Editable Field for Password with Navigation to ForgotPasswordPage
+  Widget buildEditableFieldForPassword(BuildContext context, String text, IconData icon) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
           Expanded(
             child: TextField(
-              enabled: false, // Make it non-editable
+              enabled: false,
               decoration: InputDecoration(
-                border: UnderlineInputBorder(),
+                border: const UnderlineInputBorder(),
                 hintText: text,
               ),
             ),
           ),
           IconButton(
-            icon: Icon(icon, color: Color(0xFFFA7BFD)), // Keep icon for password field only
+            icon: Icon(icon, color: const Color(0xFFFA7BFD)),
             onPressed: () {
-              // Navigate to the ForgotPasswordPage when the edit icon is pressed
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => ForgotPasswordPage(),
-                ),
+                MaterialPageRoute(builder: (context) => ForgotPasswordPage()),
               );
             },
           ),
@@ -169,11 +200,31 @@ class UserProfilePageEdit extends StatelessWidget {
     );
   }
 
-  // Helper method to build action buttons (Support and Log Out)
+  // Non-Editable Field (e.g., Email)
+  Widget buildNonEditableField(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              enabled: false,
+              decoration: InputDecoration(
+                border: const UnderlineInputBorder(),
+                hintText: text,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Action Buttons (e.g., Log Out, Delete Account)
   Widget buildActionButton(String text, Color color, VoidCallback onPressed) {
     return SizedBox(
-      width: 150, // Set button width
-      height: 50, // Set button height
+      width: 150,
+      height: 50,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
@@ -181,7 +232,7 @@ class UserProfilePageEdit extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        onPressed: onPressed, // Pass in the onPressed function for the button
+        onPressed: onPressed,
         child: Text(
           text,
           style: const TextStyle(

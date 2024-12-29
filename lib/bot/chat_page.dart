@@ -1,11 +1,20 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:last/services/chat_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
+import 'package:last/services/chat_service.dart';
+
 String _formatTime() {
   return DateFormat('HH:mm').format(DateTime.now());
+}
+
+Future<String> getUsername() async {
+  User? user = FirebaseAuth.instance.currentUser;
+  await user?.reload();
+  return user?.displayName ?? 'подруга';
 }
 
 Widget inputField({
@@ -18,14 +27,14 @@ Widget inputField({
       children: [
         Expanded(
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
             decoration: BoxDecoration(
-              color: Color(0xFFF4F4F4),
+              color: const Color(0xFFF4F4F4),
               borderRadius: BorderRadius.circular(30),
             ),
             child: TextField(
               controller: controller,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Aa',
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.only(left: 0),
@@ -35,7 +44,7 @@ Widget inputField({
         ),
         const SizedBox(width: 8.0),
         IconButton(
-          icon: Icon(
+          icon: const Icon(
             Icons.chevron_right,
             color: Color(0xFFC575C7),
             size: 32,
@@ -59,18 +68,12 @@ class _ChatPageState extends State<ChatPage> {
   final ChatService _chatService = ChatService();
   bool _isLoading = false;
   List<Map<String, dynamic>> _messages = [];
-
-  // Hidden system prompt (not shown in the chat UI)
-  final Map<String, String> _systemPrompt = {
-    'role': 'system',
-    'content': 'Ты моя лучшая подруга, с которой я могу обсудить разные женские темы. Давай поговорим как близкие друзья!'
-  };
+  String _typingMessage = ''; // Message being animated
 
   @override
   void initState() {
     super.initState();
     _loadMessages();
-    _sendDailyAffirmation(); // Send daily affirmation
   }
 
   Future<void> _loadMessages() async {
@@ -83,20 +86,21 @@ class _ChatPageState extends State<ChatPage> {
           _messages = List<Map<String, dynamic>>.from(json.decode(savedMessages));
         });
       } else {
-        _setDefaultMessages();
+        await _setDefaultMessages();
       }
     } catch (e) {
       print("Error loading messages: $e");
-      _setDefaultMessages();
+      await _setDefaultMessages();
     }
   }
 
-  void _setDefaultMessages() {
+  Future<void> _setDefaultMessages() async {
+    String username = await getUsername();
     setState(() {
       _messages = [
         {
           'role': 'assistant',
-          'content': 'Привет, Мадина!',
+          'content': 'Привет, $username!',
           'time': _formatTime(),
         },
         {
@@ -113,38 +117,10 @@ class _ChatPageState extends State<ChatPage> {
     prefs.setString('chatMessages', json.encode(_messages));
   }
 
-  Future<void> _sendDailyAffirmation() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final int today = DateTime.now().weekday; // Get current weekday (1 = Monday, 7 = Sunday)
-
-      // Check if the affirmation for today has already been sent
-      int? lastAffirmationDay = prefs.getInt('lastAffirmationDay');
-      if (lastAffirmationDay == today) return;
-
-      // Fetch the daily affirmation
-      String affirmation = await _chatService.fetchDailyAffirmation(today);
-
-      setState(() {
-        _messages.add({
-          'role': 'assistant',
-          'content': affirmation,
-          'time': _formatTime(),
-        });
-      });
-
-      // Save the last affirmation day and updated messages
-      prefs.setInt('lastAffirmationDay', today);
-      await _saveMessages();
-    } catch (e) {
-      print("Error sending daily affirmation: $e");
-    }
-  }
-
   Future<void> _sendMessage() async {
-    String messageText = _messageController.text;
+    String messageText = _messageController.text.trim();
 
-    if (messageText.trim().isNotEmpty) {
+    if (messageText.isNotEmpty) {
       setState(() {
         _messages.add({
           'role': 'user',
@@ -155,31 +131,19 @@ class _ChatPageState extends State<ChatPage> {
       });
 
       _messageController.clear();
-      await _saveMessages(); // Save message history after adding the user's message
+      await _saveMessages();
 
       try {
-        // Prepare the chat history for the API request, including the hidden system prompt
-        List<Map<String, String>> chatHistory = [
-          _systemPrompt,
-          ..._messages.map((msg) {
-            return {
-              'role': msg['role'] as String,
-              'content': msg['content'] as String,
-            };
-          }).toList(),
-        ];
+        List<Map<String, String>> chatHistory = _messages.map((msg) {
+          return {
+            'role': msg['role'] as String,
+            'content': msg['content'] as String,
+          };
+        }).toList();
 
-        // Send the message history to the chat service
         String response = await _chatService.sendMessage(chatHistory);
 
-        setState(() {
-          _messages.add({
-            'role': 'assistant',
-            'content': response,
-            'time': _formatTime(),
-          });
-        });
-        await _saveMessages(); // Save updated message history
+        _animateTyping(response);
       } catch (e) {
         print("Error: $e");
         setState(() {
@@ -193,9 +157,38 @@ class _ChatPageState extends State<ChatPage> {
         setState(() {
           _isLoading = false;
         });
-        await _saveMessages(); // Save messages in case of an error
+        await _saveMessages();
       }
     }
+  }
+
+  void _animateTyping(String fullMessage) {
+    const typingSpeed = Duration(milliseconds: 50); // Speed per character
+    final StringBuffer buffer = StringBuffer();
+    Timer? timer;
+
+    timer = Timer.periodic(typingSpeed, (t) {
+      if (buffer.length < fullMessage.length) {
+        setState(() {
+          buffer.write(fullMessage[buffer.length]);
+          _typingMessage = buffer.toString();
+        });
+      } else {
+        t.cancel();
+        timer = null;
+
+        // Add the full message to _messages after animation
+        setState(() {
+          _messages.add({
+            'role': 'assistant',
+            'content': fullMessage,
+            'time': _formatTime(),
+          });
+          _typingMessage = ''; // Clear the typing animation
+        });
+        _saveMessages();
+      }
+    });
   }
 
   @override
@@ -205,7 +198,7 @@ class _ChatPageState extends State<ChatPage> {
         backgroundColor: Colors.grey[100],
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
+          icon: const Icon(
             Icons.chevron_left,
             color: Color(0xFFC575C7),
             size: 42,
@@ -216,7 +209,7 @@ class _ChatPageState extends State<ChatPage> {
         ),
         title: Row(
           children: [
-            CircleAvatar(
+            const CircleAvatar(
               backgroundImage: AssetImage('assets/images/profile.png'),
             ),
             const SizedBox(width: 8),
@@ -246,9 +239,17 @@ class _ChatPageState extends State<ChatPage> {
             child: ListView.builder(
               reverse: true,
               padding: const EdgeInsets.all(16.0),
-              itemCount: _messages.length,
+              itemCount: _messages.length + (_typingMessage.isNotEmpty ? 1 : 0),
               itemBuilder: (context, index) {
-                final message = _messages[_messages.length - 1 - index];
+                if (_typingMessage.isNotEmpty && index == 0) {
+                  return MessageBubble(
+                    message: _typingMessage,
+                    time: '',
+                    isSentByMe: false,
+                  );
+                }
+
+                final message = _messages[_messages.length - 1 - index + (_typingMessage.isNotEmpty ? 1 : 0)];
                 return MessageBubble(
                   message: message['content'],
                   time: message['time'] ?? '',
@@ -257,7 +258,7 @@ class _ChatPageState extends State<ChatPage> {
               },
             ),
           ),
-          if (_isLoading) CircularProgressIndicator(),
+          if (_isLoading) const CircularProgressIndicator(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: inputField(
@@ -265,7 +266,7 @@ class _ChatPageState extends State<ChatPage> {
               onSendPressed: _sendMessage,
             ),
           ),
-          SizedBox(height: 50),
+          const SizedBox(height: 50),
         ],
       ),
     );
@@ -277,7 +278,7 @@ class MessageBubble extends StatelessWidget {
   final bool isSentByMe;
   final String time;
 
-  MessageBubble({
+  const MessageBubble({
     required this.message,
     required this.isSentByMe,
     required this.time,
@@ -292,55 +293,54 @@ class MessageBubble extends StatelessWidget {
         mainAxisAlignment: isSentByMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (!isSentByMe) ...[
-            CircleAvatar(
+            const CircleAvatar(
               radius: 18,
               backgroundImage: AssetImage('assets/images/profile.png'),
             ),
-            SizedBox(width: 8.0),
+            const SizedBox(width: 8.0),
           ],
           Flexible(
             child: Container(
               constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
-              padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 14.0),
+              padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 14.0),
               decoration: BoxDecoration(
-                color: isSentByMe ? Color(0xFFC575C7) : Colors.grey[200],
+                color: isSentByMe ? const Color(0xFFC575C7) : Colors.grey[200],
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                  bottomLeft: isSentByMe ? Radius.circular(20) : Radius.circular(0),
-                  bottomRight: isSentByMe ? Radius.circular(0) : Radius.circular(20),
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: isSentByMe ? const Radius.circular(20) : const Radius.circular(0),
+                  bottomRight: isSentByMe ? const Radius.circular(0) : const Radius.circular(20),
                 ),
               ),
               child: Column(
                 crossAxisAlignment: isSentByMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
                   Text(
-                    message ?? '',
+                    message,
                     style: TextStyle(
                       color: isSentByMe ? Colors.white : Colors.black,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        time ?? '',
+                        time,
                         style: TextStyle(
                           color: isSentByMe ? Colors.white.withOpacity(0.6) : Colors.black.withOpacity(0.6),
                           fontSize: 12,
                         ),
                       ),
-                      if (isSentByMe) ...[
-                        SizedBox(width: 4),
-                        Icon(
+                      if (isSentByMe)
+                        const SizedBox(width: 4),
+                        const Icon(
                           Icons.check_circle,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white,
                           size: 14,
                         ),
-                      ]
                     ],
                   ),
                 ],

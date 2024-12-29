@@ -6,7 +6,7 @@ import 'package:last/user_profile/user_profile_page.dart';
 import 'package:last/widgets/horizontal_grid.dart';
 import 'package:last/widgets/podcast_horizontal_grid.dart';
 import 'package:last/services/auth_service.dart';
- 
+
 class UserProfilePage extends StatelessWidget {
   const UserProfilePage({Key? key}) : super(key: key);
 
@@ -14,6 +14,7 @@ class UserProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     User? user = FirebaseAuth.instance.currentUser;
     String userName = user?.displayName ?? 'No name';
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -43,59 +44,25 @@ class UserProfilePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 20),
-            
-            // Profile image with edit icon
-            Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: AssetImage('assets/images/avatar.png'), // Profile image
-                ),
-                GestureDetector(
-                  onTap: () {
-                    // Navigate to the edit profile page
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const UserProfilePageEdit()),
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xFFFA7BFD), // Background color for the edit icon
-                      shape: BoxShape.circle,
-                    ),
-                    padding: const EdgeInsets.all(6.0),
-                    child: Icon(
-                      Icons.edit,
-                      color: Colors.white, // Icon color inside the circle
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 10),
-            
+
             // Username
-             Text(
-              userName,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-            
+            // Text(
+            //   userName,
+            //   style: TextStyle(
+            //     fontSize: 16,
+            //     color: Colors.grey,
+            //   ),
+            // ),
+
             const SizedBox(height: 10),
-            
+
             // Buttons
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.start, // Align to the leading side
                 children: [
-                  // "Ознакомлено" button
+                  // "Сохраненные" button
                   ElevatedButton(
                     onPressed: () {},
                     style: ElevatedButton.styleFrom(
@@ -106,7 +73,33 @@ class UserProfilePage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                     child: const Text(
-                      'Cохраненные',
+                      'Сохраненные',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16), // Add spacing between buttons
+
+                  // "Редактировать профиль" button
+                  ElevatedButton(
+                    onPressed: () {
+                      // Navigate to the edit profile page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const UserProfilePageEdit()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFFFA7BFD), // Button color
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    child: const Text(
+                      'Редактировать профиль',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white,
@@ -116,31 +109,31 @@ class UserProfilePage extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Divider with horizontal padding and reduced height
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: const Divider(height: 20, thickness: 1, color: Color(0xFFD8DADC)), // Reduced height and thickness
             ),
-            
+
             // Horizontal grid with padding
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: FavoritePostsGrid(favoritePostIds: [],),
+              child: FavoritePostsGrid(favoritePostIds: []),
             ),
 
             const SizedBox(height: 20),
-            
+
             // Another Divider with padding
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: const Divider(height: 20, thickness: 1, color: Color(0xFFD8DADC)), // Reduced height and thickness
             ),
-            
+
             // Podcast horizontal grid with padding
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: FavoritePodcastsGrid(favoritePodcastIds: [],),
+              child: FavoritePodcastsGrid(favoritePodcastIds: []),
             ),
           ],
         ),
