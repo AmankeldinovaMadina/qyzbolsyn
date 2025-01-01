@@ -4,7 +4,7 @@ import 'package:last/services/model/category.dart';
 
 
 class CategoryService {
-  final String baseUrl = "https://qyzbolsyn-backend-3.onrender.com"; // Replace with your backend URL
+  final String baseUrl = "https://qyzbolsyn-backend-j2rg.onrender.com"; // Replace with your backend URL
 
   // Method to fetch all categories
   // Fetch categories and return them as a Map<String, String>
@@ -50,7 +50,7 @@ class CategoryCache {
     }
 
     final response = await http.get(
-      Uri.parse("https://qyzbolsyn-backend-3.onrender.com/categories/"), // Replace with your backend URL
+      Uri.parse("https://qyzbolsyn-backend-j2rg.onrender.com/categories/"), // Replace with your backend URL
       headers: {"Accept": "application/json"},
     );
 

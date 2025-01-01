@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:last/home/category_post.dart';
 import 'package:last/services/model/post.dart';
 import 'package:last/services/posts_service.dart';
 import 'package:last/widgets/horizontal_grid.dart';
+
+// Same category map as in HomePage
+const Map<String, String> categoryMap = {
+  'health': 'Все о нашем здоровье',
+  'understand': 'Как понять себя',
+  'security': 'Моя безопасность',
+  'relationship': 'Отношения',
+  'education': 'Просвещение',
+};
 
 class SearchPostsScreen extends StatefulWidget {
   const SearchPostsScreen({super.key});
@@ -11,7 +21,6 @@ class SearchPostsScreen extends StatefulWidget {
 }
 
 class _SearchPostsScreenState extends State<SearchPostsScreen> {
-  late Future<List<Post>> futurePosts;
   TextEditingController searchController = TextEditingController();
   List<Post> allPosts = [];
   List<Post> filteredPosts = [];
@@ -36,7 +45,7 @@ class _SearchPostsScreenState extends State<SearchPostsScreen> {
       final posts = await ApiService().fetchPosts();
       setState(() {
         allPosts = posts;
-        filteredPosts = posts; // Initially, show all posts
+        filteredPosts = posts;
         isLoading = false;
       });
     } catch (e) {
@@ -66,27 +75,23 @@ class _SearchPostsScreenState extends State<SearchPostsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header section with back button and title
+            // Header section
             Container(
               padding: const EdgeInsets.all(16.0),
               color: Colors.white,
               child: Row(
                 children: [
-                  // Back button
                   GestureDetector(
                     onTap: () {
                       Navigator.of(context).pop();
                     },
-                    child: const Padding(
-                      padding: EdgeInsets.only(right: 16.0),
-                      child: Icon(
-                        Icons.chevron_left,
-                        color: Color(0xFFFA7BFD),
-                        size: 42,
-                      ),
+                    child: const Icon(
+                      Icons.chevron_left,
+                      color: Color(0xFFFA7BFD),
+                      size: 42,
                     ),
                   ),
-                  // Title
+                  const SizedBox(width: 16.0),
                   const Text(
                     'Навигация',
                     style: TextStyle(
@@ -107,7 +112,6 @@ class _SearchPostsScreenState extends State<SearchPostsScreen> {
                   controller: searchController,
                   textAlignVertical: TextAlignVertical.center,
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12.0),
                     hintText: 'Поиск',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
@@ -120,20 +124,89 @@ class _SearchPostsScreenState extends State<SearchPostsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 30.0),
-            // Horizontal Grid
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            const SizedBox(height: 16.0),
+            // Content: Horizontal Grids for Categories
+            Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : filteredPosts.isEmpty
-                      ? const Center(child: Text('No posts found.'))
-                      : HorizontalGridWidget(posts: filteredPosts),
+                      ? const Center(child: Text('Нет постов.'))
+                      : _buildCategoryGrids(),
             ),
           ],
         ),
       ),
     );
   }
-}
 
+Widget _buildCategoryGrids() {
+  // Group posts by category
+  Map<String, List<Post>> postsByCategory = {};
+  for (var post in filteredPosts) {
+    postsByCategory.putIfAbsent(post.category, () => []).add(post);
+  }
+
+  return SingleChildScrollView(
+    child: Column(
+      children: categoryMap.entries.map((entry) {
+        String category = entry.key;
+        String categoryName = entry.value;
+
+        if (!postsByCategory.containsKey(category)) {
+          return Container(); // Skip categories with no posts
+        }
+
+        List<Post> posts = postsByCategory[category]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Category title with chevron and navigation
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  Text(
+                    categoryName,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CategoryPostsPage(
+                            categoryName: categoryName,
+                            posts: posts,
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Icon(
+                      Icons.chevron_right,
+                      color: Color(0xFFFA7BFD),
+                      size: 36,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Horizontal grid for the category
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: HorizontalGridWidget(posts: posts),
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: Color(0xFFD1D1D6), thickness: 1),
+          ],
+        );
+      }).toList(),
+    ),
+  );
+}
+}

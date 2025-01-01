@@ -6,7 +6,7 @@ class ApiService {
   // Method to fetch posts from a specific category
   Future<List<Post>> fetchPosts({String? category}) async {
     final response = await http.get(
-      Uri.parse('https://qyzbolsyn-backend-3.onrender.com/posts/posts/'),
+      Uri.parse('https://qyzbolsyn-backend-j2rg.onrender.com/posts/posts/'),
       headers: {'accept': 'application/json'},
     );
 

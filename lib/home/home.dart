@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:last/bot/bot_page.dart';
+import 'package:last/home/category_post.dart';
 import 'package:last/podcast/podcasts_page.dart';
 import 'package:last/posts/search_post_page.dart';
 import 'package:last/services/model/post.dart';
@@ -142,21 +143,46 @@ class HomePage extends StatelessWidget {
                                 categoryCounter++;
 
                                 // Add the LetsTalk widget after the first category
+                                  // Inside your map iteration for displaying categories
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Category title
+                                    // Category title with chevron icon
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                                      child: Text(
-                                        categoryName,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.grey,
+                                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          categoryName,
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey,
+                                          ),
                                         ),
-                                      ),
+                                        const Spacer(),
+                                        GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => CategoryPostsPage(
+                                                  categoryName: categoryName,
+                                                  posts: filteredPosts,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          child: const Icon(
+                                            Icons.chevron_right,
+                                            color: Color(0xFFFA7BFD),
+                                            size: 36,
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                  ),
+
                                     // Horizontal grid for the category
                                     HorizontalGridWidget(posts: filteredPosts),
                                     const SizedBox(height: 16),
@@ -177,6 +203,7 @@ class HomePage extends StatelessWidget {
                                     const SizedBox(height: 16),
                                   ],
                                 );
+
                               } else {
                                 return Container(); // Return an empty container if no posts
                               }

@@ -53,7 +53,7 @@ class ChatService {
 
 
 
-    final String _baseUrl = 'https://qyzbolsyn-backend-3.onrender.com';
+    final String _baseUrl = 'https://qyzbolsyn-backend-j2rg.onrender.com/';
 
   Future<String> fetchDailyAffirmation(int day) async {
     try {

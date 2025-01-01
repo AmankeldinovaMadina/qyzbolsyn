@@ -6,7 +6,7 @@ class PodcastService {
   // Method to fetch podcasts from a specific category
   Future<List<Podcast>> fetchPodcasts({String? category}) async {
     final response = await http.get(
-      Uri.parse('https://qyzbolsyn-backend-3.onrender.com/podcasts/podcasts/'),
+      Uri.parse('https://qyzbolsyn-backend-j2rg.onrender.com/podcasts/podcasts/'),
       headers: {'accept': 'application/json', 'Content-Type': 'application/json'},
     );
 
@@ -26,7 +26,7 @@ class PodcastService {
     }
   }
   
-  final String _baseUrl = 'https://qyzbolsyn-backend-3.onrender.com';
+  final String _baseUrl = 'https://qyzbolsyn-backend-j2rg.onrender.com';
 
   Future<Podcast> fetchLatestPodcast() async {
     final response = await http.get(
@@ -45,7 +45,7 @@ class PodcastService {
   // Method to fetch a single podcast by ID
   Future<Podcast> fetchPodcastById(String podcastId) async {
     final response = await http.get(
-      Uri.parse('https://qyzbolsyn-backend-3.onrender.com/podcasts/podcasts/$podcastId'),
+      Uri.parse('https://qyzbolsyn-backend-j2rg.onrender.com/podcasts/podcasts/$podcastId'),
       headers: {'accept': 'application/json'},
     );
 

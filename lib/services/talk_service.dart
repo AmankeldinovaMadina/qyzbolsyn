@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:last/services/model/talk.dart';
 
 class TalkService {
-  final String _baseUrl = 'https://qyzbolsyn-backend-3.onrender.com'; // Replace with your base URL
+  final String _baseUrl = 'https://qyzbolsyn-backend-j2rg.onrender.com'; // Replace with your base URL
 
   // Fetch the last talk
   Future<Talk> fetchLastTalk() async {
