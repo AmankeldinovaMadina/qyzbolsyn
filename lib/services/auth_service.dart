@@ -108,7 +108,7 @@ Future<void> signout({required BuildContext context}) async {
     );
   } catch (e) {
     // Show a toast message in case of an error
-    _showToast("Error signing out. Please try again.");
+    _showToast("Ошибка при выходе из системы. Пожалуйста, попробуйте еще раз.");
   }
 }
 
@@ -151,7 +151,7 @@ Future<void> signInWithApple(BuildContext context) async {
     // Navigate to the Home page
     _navigateToHome(context);
   } catch (e) {
-    _showToast('Failed to sign in with Apple. Please try again.');
+    _showToast('Не удалось войти с помощью Apple.');
   }
 }
 
@@ -160,7 +160,7 @@ Future<void> signInWithGoogle(BuildContext context) async {
   try {
     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
     if (googleUser == null) {
-      _showToast('Google sign-in was canceled.');
+      _showToast('Вход через Google был отменен.');
       return;
     }
 
@@ -193,9 +193,9 @@ Future<void> signInWithGoogle(BuildContext context) async {
     // Navigate to the Home page
     _navigateToHome(context);
   } on FirebaseAuthException catch (e) {
-    _showToast('Authentication failed: ${_getAuthErrorMessage(e)}');
+    _showToast('Аутентификация не выполнена:${_getAuthErrorMessage(e)}');
   } catch (e) {
-    _showToast('Failed to sign in with Google. Please try again.');
+    _showToast('Не удалось войти с помощью Google.Попробуйте еще раз.');
   }
 }
 
@@ -230,7 +230,7 @@ Future<void> registerUserWithGoogle(BuildContext context) async {
 
     _navigateToHome(context);
   } catch (e) {
-    _showToast('Failed to register with Google.');
+    _showToast('Не удалось зарегистрироваться с помощью Google.');
     print(e);
   }
 }
@@ -268,7 +268,7 @@ Future<void> registerUserWithApple(BuildContext context) async {
 
     _navigateToHome(context);
   } catch (e) {
-    _showToast('Failed to register with Apple.');
+    _showToast('Не удалось зарегистрироваться с помощью Apple.');
     print(e);
   }
 }
@@ -286,10 +286,10 @@ Future<void> registerUserWithApple(BuildContext context) async {
           'favoritePosts': FieldValue.arrayUnion([postId]),
         }, SetOptions(merge: true));
       } catch (e) {
-        _showToast("Failed to add favorite post.");
+        _showToast("Не удалось добавить пост в избранное.");
       }
     } else {
-      _showToast("You must be logged in to perform this action.");
+      _showToast("Вы должны войти в систему, чтобы выполнить это действие.");
     }
   }
 
@@ -301,10 +301,10 @@ Future<void> registerUserWithApple(BuildContext context) async {
           'favoritePodcasts': FieldValue.arrayRemove([podcastId]),
         }, SetOptions(merge: true));
       } catch (e) {
-        _showToast("Failed to remove favorite podcast.");
+        _showToast("Не удалось удалить подкаст из избранного.");
       }
     } else {
-      _showToast("You must be logged in to perform this action.");
+      _showToast("Вы должны войти в систему, чтобы выполнить это действие.");
     }
   }
 
@@ -316,10 +316,10 @@ Future<void> registerUserWithApple(BuildContext context) async {
           'favoritePodcasts': FieldValue.arrayUnion([podcastId]),
         }, SetOptions(merge: true));
       } catch (e) {
-        _showToast("Failed to add favorite podcast.");
+        _showToast("Не удалось добавить подкаст в избранное.");
       }
     } else {
-      _showToast("You must be logged in to perform this action.");
+      _showToast("Вы должны войти в систему, чтобы выполнить это действие.");
     }
   }
 
@@ -331,10 +331,10 @@ Future<void> registerUserWithApple(BuildContext context) async {
           'favoritePosts': FieldValue.arrayRemove([postId]),
         }, SetOptions(merge: true));
       } catch (e) {
-        _showToast("Failed to remove favorite post.");
+        _showToast("Не удалось удалить пост из избранного.");
       }
     } else {
-      _showToast("You must be logged in to perform this action.");
+      _showToast("Вы должны войти в систему, чтобы выполнить это действие.");
     }
   }
 
@@ -366,7 +366,7 @@ Future<List<Post>> getFavoritePosts() async {
 
       return posts;
     } catch (e) {
-      _showToast("Failed to fetch favorite posts.");
+      _showToast("Не удалось загрузить избранные посты.");
       print(e);
     }
   }
@@ -402,7 +402,7 @@ Future<List<Podcast>> getFavoritePodcasts() async {
       }
       return podcasts;
     } catch (e) {
-      _showToast("Failed to fetch favorite podcasts.");
+      _showToast("Не удалось загрузить избранные подкасты.");
       print(e);
     }
   }
@@ -416,11 +416,11 @@ Future<void> resetPassword({
 }) async {
   try {
     await _auth.sendPasswordResetEmail(email: email);
-    _showToast('A password reset link has been sent to $email.');
+    _showToast('Ссылка для сброса пароля была отправлена на $email.');
   } on FirebaseAuthException catch (e) {
     _showToast(_getAuthErrorMessage(e));
   } catch (e) {
-    _showToast('An unexpected error occurred. Please try again.');
+    _showToast('Произошла непредвиденная ошибка. Пожалуйста, попробуйте еще раз.');
   }
 }
 
@@ -435,7 +435,7 @@ Future<void> deleteAccount(BuildContext context) async {
       await user.delete();
 
       // Show a success message
-      _showToast("Your account has been deleted successfully.");
+      _showToast("Ваш аккаунт был успешно удален.");
 
       // Navigate to the Welcome page after deletion
       Navigator.pushAndRemoveUntil(
@@ -445,40 +445,40 @@ Future<void> deleteAccount(BuildContext context) async {
       );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        _showToast("Please log in again to delete your account.");
+        _showToast("Пожалуйста, войдите в систему снова, чтобы удалить свой аккаунт.");
       } else {
-        _showToast("An error occurred while deleting the account.");
+        _showToast("Произошла ошибка при удалении аккаунта.");
       }
     } catch (e) {
-      _showToast("An unexpected error occurred. Please try again.");
+      _showToast("Произошла непредвиденная ошибка. Пожалуйста, попробуйте еще раз.");
     }
   } else {
-    _showToast("No user is logged in.");
+    _showToast("Пользователь не вошел в систему.");
   }
 }
 
   String _getAuthErrorMessage(FirebaseAuthException e) {
     switch (e.code) {
-      case 'weak-password':
-        return 'The password provided is too weak.';
-      case 'email-already-in-use':
-        return 'An account already exists with that email.';
-      case 'invalid-email':
-        return 'Invalid email address.';
-      case 'operation-not-allowed':
-        return 'Google sign-in is not enabled.';
-      case 'invalid-credential':
-        return 'Invalid credentials.';
-      case 'user-disabled':
-        return 'This account has been disabled.';
-      case 'user-not-found':
-        return 'No user found with this email.';
-      case 'wrong-password':
-        return 'Wrong password provided.';
-      case 'account-exists-with-different-credential':
-        return 'An account already exists with the same email but different sign-in credentials.';
-      default:
-        return 'An error occurred. Please try again.';
+        case 'weak-password':
+          return 'Предоставленный пароль слишком слабый.';
+        case 'email-already-in-use':
+          return 'Аккаунт с таким email уже существует.';
+        case 'invalid-email':
+          return 'Неверный адрес электронной почты.';
+        case 'operation-not-allowed':
+          return 'Вход через Google не включен.';
+        case 'invalid-credential':
+          return 'Недействительные учетные данные.';
+        case 'user-disabled':
+          return 'Этот аккаунт был отключен.';
+        case 'user-not-found':
+          return 'Пользователь с таким email не найден.';
+        case 'wrong-password':
+          return 'Указан неверный пароль.';
+        case 'account-exists-with-different-credential':
+          return 'Аккаунт с таким email уже существует, но с другими учетными данными.';
+        default:
+          return 'Произошла ошибка. Пожалуйста, попробуйте еще раз.';
     }
   }
 }
