@@ -20,7 +20,6 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
 
-
   // Helper method to show toast messages
   void _showToast(String message) {
     Fluttertoast.showToast(
@@ -90,24 +89,28 @@ class AuthService {
     }
   }
 
-  Future<void> signout({required BuildContext context}) async {
-    try {
-      await Future.wait([
-        _auth.signOut(),
-        _googleSignIn.signOut(),
-      ]);
+Future<void> signout({required BuildContext context}) async {
+  try {
+    // Sign out from Firebase and other providers (e.g., Google Sign-In)
+    await Future.wait([
+      _auth.signOut(),
+      _googleSignIn.signOut(),
+    ]);
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.remove('rememberMe');
+    // Clear user data from SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Clears all stored data, including isLoggedIn and userId
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (BuildContext context) => const WelcomePage()),
-      );
-    } catch (e) {
-      _showToast("Error signing out.");
-    }
+    // Navigate to the Welcome Page
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const WelcomePage()),
+    );
+  } catch (e) {
+    // Show a toast message in case of an error
+    _showToast("Error signing out. Please try again.");
   }
+}
 
   // Apple Sign-In Method
 Future<void> signInWithApple(BuildContext context) async {
@@ -125,20 +128,30 @@ Future<void> signInWithApple(BuildContext context) async {
       accessToken: appleCredential.authorizationCode,
     );
 
-    final UserCredential userCredential =
-        await _auth.signInWithCredential(credential);
+    final UserCredential userCredential = await _auth.signInWithCredential(credential);
 
-    // Check if user exists in Firestore
+    // Save the login state in SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('userId', userCredential.user!.uid);
+
+    // Check if the user exists in Firestore
     final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
     if (!userDoc.exists) {
-      _showToast('User not registered. Please register first.');
-      return;
+      // Register the new user if not found
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'email': appleCredential.email ?? userCredential.user!.email ?? '',
+        'displayName': appleCredential.givenName != null
+            ? '${appleCredential.givenName} ${appleCredential.familyName}'
+            : 'Apple User',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
     }
 
+    // Navigate to the Home page
     _navigateToHome(context);
   } catch (e) {
-    _showToast('Failed to sign in with Apple.');
-    print(e);
+    _showToast('Failed to sign in with Apple. Please try again.');
   }
 }
 
@@ -158,89 +171,35 @@ Future<void> signInWithGoogle(BuildContext context) async {
       idToken: googleAuth.idToken,
     );
 
-    final UserCredential userCredential =
-        await _auth.signInWithCredential(credential);
+    final UserCredential userCredential = await _auth.signInWithCredential(credential);
 
-    // Check if user exists in Firestore
+    // Save the login state in SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('userId', userCredential.user!.uid);
+
+    // Check if the user exists in Firestore
     final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
     if (!userDoc.exists) {
-      // Show toast message if the user is not registered
-      _showToast('User not registered. Please register first.');
-      return;
+      // Register the new user if not found
+      await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        'email': userCredential.user!.email,
+        'displayName': userCredential.user!.displayName ?? 'Google User',
+        'photoURL': userCredential.user!.photoURL,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
     }
 
-    // Navigate to home if user exists
+    // Navigate to the Home page
     _navigateToHome(context);
   } on FirebaseAuthException catch (e) {
     _showToast('Authentication failed: ${_getAuthErrorMessage(e)}');
-    print(e);
   } catch (e) {
     _showToast('Failed to sign in with Google. Please try again.');
-    print(e);
   }
 }
 
 
-
-  Future<void> addFavoritePost(String postId) async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      try {
-        await _firestore.collection('users').doc(user.uid).set({
-          'favoritePosts': FieldValue.arrayUnion([postId]),
-        }, SetOptions(merge: true));
-      } catch (e) {
-        _showToast("Failed to add favorite post.");
-      }
-    } else {
-      _showToast("You must be logged in to perform this action.");
-    }
-  }
-
-  Future<void> addFavoritePodcast(String podcastId) async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      try {
-        await _firestore.collection('users').doc(user.uid).set({
-          'favoritePodcasts': FieldValue.arrayUnion([podcastId]),
-        }, SetOptions(merge: true));
-      } catch (e) {
-        _showToast("Failed to add favorite podcast.");
-      }
-    } else {
-      _showToast("You must be logged in to perform this action.");
-    }
-  }
-
-  Future<void> removeFavoritePost(String postId) async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      try {
-        await _firestore.collection('users').doc(user.uid).set({
-          'favoritePosts': FieldValue.arrayRemove([postId]),
-        }, SetOptions(merge: true));
-      } catch (e) {
-        _showToast("Failed to remove favorite post.");
-      }
-    } else {
-      _showToast("You must be logged in to perform this action.");
-    }
-  }
-
-  Future<void> removeFavoritePodcast(String podcastId) async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      try {
-        await _firestore.collection('users').doc(user.uid).set({
-          'favoritePodcasts': FieldValue.arrayRemove([podcastId]),
-        }, SetOptions(merge: true));
-      } catch (e) {
-        _showToast("Failed to remove favorite podcast.");
-      }
-    } else {
-      _showToast("You must be logged in to perform this action.");
-    }
-  }
 Future<void> registerUserWithGoogle(BuildContext context) async {
   try {
     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -314,6 +273,70 @@ Future<void> registerUserWithApple(BuildContext context) async {
   }
 }
 
+
+
+
+
+
+  Future<void> addFavoritePost(String postId) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'favoritePosts': FieldValue.arrayUnion([postId]),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        _showToast("Failed to add favorite post.");
+      }
+    } else {
+      _showToast("You must be logged in to perform this action.");
+    }
+  }
+
+  Future<void> removeFavoritePodcast(String podcastId) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'favoritePodcasts': FieldValue.arrayRemove([podcastId]),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        _showToast("Failed to remove favorite podcast.");
+      }
+    } else {
+      _showToast("You must be logged in to perform this action.");
+    }
+  }
+
+  Future<void> addFavoritePodcast(String podcastId) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'favoritePodcasts': FieldValue.arrayUnion([podcastId]),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        _showToast("Failed to add favorite podcast.");
+      }
+    } else {
+      _showToast("You must be logged in to perform this action.");
+    }
+  }
+
+  Future<void> removeFavoritePost(String postId) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'favoritePosts': FieldValue.arrayRemove([postId]),
+        }, SetOptions(merge: true));
+      } catch (e) {
+        _showToast("Failed to remove favorite post.");
+      }
+    } else {
+      _showToast("You must be logged in to perform this action.");
+    }
+  }
 
 Future<List<Post>> getFavoritePosts() async {
   final user = _auth.currentUser;

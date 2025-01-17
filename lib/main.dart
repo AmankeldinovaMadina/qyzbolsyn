@@ -29,12 +29,13 @@ Future<void> main() async {
     print("Firebase initialization error: $e");
   }
 
-  // Check if the user should be remembered
+  // Check login state
   SharedPreferences prefs = await SharedPreferences.getInstance();
+  bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   bool? isRemembered = prefs.getBool('rememberMe');
 
-  // Decide which page to show based on the "Remember Me" preference
-  Widget initialPage = (isRemembered == true) ? const Home() : const WelcomePage();
+  // Decide the initial page based on login state
+  Widget initialPage = (isLoggedIn || isRemembered == true) ? const Home() : const WelcomePage();
 
   runApp(MyApp(initialPage: initialPage));
 }
