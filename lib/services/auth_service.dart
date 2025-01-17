@@ -319,26 +319,28 @@ Future<List<Post>> getFavoritePosts() async {
   final user = _auth.currentUser;
   if (user != null) {
     try {
-      // Fetch IDs from Firestore
       final doc = await _firestore.collection('users').doc(user.uid).get();
       List<String> postIds = List<String>.from(doc.data()?['favoritePosts'] ?? []);
-
-      // Fetch details from the backend
       List<Post> posts = [];
+
       for (String postId in postIds) {
         final response = await http.get(
-          Uri.parse('https://qyzbolsyn-backend-3.onrender.com/posts/posts/$postId'),
+          Uri.parse('https://qyzbolsyn-backend-j2rg.onrender.com/posts/posts/$postId'),
           headers: {'accept': 'application/json'},
         );
 
         if (response.statusCode == 200) {
-          // Decode the response using utf8 and map to Post
           Map<String, dynamic> postJson = json.decode(utf8.decode(response.bodyBytes));
-          posts.add(Post.fromJson(postJson)); // Use Post model to parse data
+          posts.add(Post.fromJson(postJson));
+        } else if (response.statusCode == 404) {
+          // Automatically remove this nonexistent Post from Firestore
+          await removeFavoritePost(postId);
+          debugPrint('Post with ID: $postId does not exist on the server. Removing from favorites...');
         } else {
-          throw Exception('Failed to load post with ID: $postId');
+          debugPrint('Failed to load post with ID: $postId (HTTP ${response.statusCode}). Skipping...');
         }
       }
+
       return posts;
     } catch (e) {
       _showToast("Failed to fetch favorite posts.");
@@ -347,6 +349,8 @@ Future<List<Post>> getFavoritePosts() async {
   }
   return [];
 }
+
+
 
 
 Future<List<Podcast>> getFavoritePodcasts() async {
@@ -361,7 +365,7 @@ Future<List<Podcast>> getFavoritePodcasts() async {
       List<Podcast> podcasts = [];
       for (String podcastId in podcastIds) {
         final response = await http.get(
-          Uri.parse('https://qyzbolsyn-backend-3.onrender.com/podcasts/podcasts/$podcastId'),
+          Uri.parse('https://qyzbolsyn-backend-j2rg.onrender.com/podcasts/podcasts/$podcastId'),
           headers: {'accept': 'application/json'},
         );
 
