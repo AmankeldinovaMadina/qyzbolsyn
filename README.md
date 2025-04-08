@@ -1,5 +1,3 @@
-Based on the available information from the GitHub repository [qyzbolsyn](https://github.com/AmankeldinovaMadina/qyzbolsyn), here is a comprehensive README file:
-
 
 # Qyzbolsyn
 
