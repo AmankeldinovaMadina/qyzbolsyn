@@ -4,6 +4,11 @@
 ## Introduction
 
 Qyzbolsynis a community-driven platform designed specifically for girls and young women to find support, empowerment, and resources. Whether it's through listening to podcasts about women's health, reading articles that foster career growth and mental strength, or chatting with an AI-powered virtual friend, Qyzbolsyn provides a safe and inspiring digital space.. This repository contains the source code and related resources for the project.
+## ScreenShots
+![Uploading 1320 ai.png…]()
+![Uploading 1320 articles.png…]()
+![Uploading 1320 community.png…]()
+![Uploading 1320 podcasts.png…]()
 
 ## Installation
 
